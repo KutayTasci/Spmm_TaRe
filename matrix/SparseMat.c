@@ -29,8 +29,11 @@ SparseMat* readSparseMat(char* fName, int partScheme, char* inPartFile) {
         SparseMat* A = (SparseMat*) malloc(sizeof(SparseMat));
 
         FILE *fpmat = fopen(fName, "rb");
+
+
         fread(&(A->gm), sizeof(int), 1, fpmat);
         fread(&(A->gn), sizeof(int), 1, fpmat);
+
         fseek(fpmat, 2*sizeof(int)+(world_rank*sizeof(int64_t)), SEEK_SET);
         fread(&sloc, sizeof(int64_t), 1, fpmat);
 
@@ -85,7 +88,6 @@ SparseMat* readSparseMat(char* fName, int partScheme, char* inPartFile) {
         free(tmp);
 
         fclose(fpmat);
-
         return A;
     }
 }

@@ -59,9 +59,11 @@ TP_Comm* readTwoPhaseComm(char* fName, int f) {
     int64_t sloc;
     TP_Comm *Comm = (TP_Comm *) malloc(sizeof (TP_Comm));
     FILE *fpmat = fopen(fName, "rb");
+
     fseek(fpmat, (world_rank*sizeof(int64_t)), SEEK_SET);
     fread(&sloc, sizeof(int64_t), 1, fpmat);
-
+    printf("sloc: %ld\n", sloc);
+    /*
     fseek(fpmat, sloc, SEEK_SET);
     fread(&(Comm->sendBuffer_p1.count), sizeof(int), 1, fpmat);
     fread(&(Comm->recvBuffer_p1.count), sizeof(int), 1, fpmat);
@@ -94,7 +96,7 @@ TP_Comm* readTwoPhaseComm(char* fName, int f) {
     Comm->recvBuffer_p1.f = f;
     Comm->sendBuffer_p2.f = f;
     Comm->recvBuffer_p2.f = f;
-
+    */
     return Comm;
 }
 
