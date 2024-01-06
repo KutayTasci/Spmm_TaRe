@@ -13,10 +13,10 @@
  * File format follows the output format of "Util" code by Oguz Selvitopi
  * Added by @Kutay
 */
-SparseMat* readSparseMat(char* fName, int partScheme, char* inPartFile) {
+SparseMat *readSparseMat(char *fName, int partScheme, char *inPartFile) {
     if (partScheme == STORE_BY_COLUMNS) {
         printf("STORE_BY_COLUMNS not implemented.");
-        exit (EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     } else {
         int world_size;
         MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -26,15 +26,14 @@ SparseMat* readSparseMat(char* fName, int partScheme, char* inPartFile) {
 
         int64_t sloc;
 
-        SparseMat* A = (SparseMat*) malloc(sizeof(SparseMat));
+        SparseMat *A = (SparseMat *) malloc(sizeof(SparseMat));
 
         FILE *fpmat = fopen(fName, "rb");
-
 
         fread(&(A->gm), sizeof(int), 1, fpmat);
         fread(&(A->gn), sizeof(int), 1, fpmat);
 
-        fseek(fpmat, 2*sizeof(int)+(world_rank*sizeof(int64_t)), SEEK_SET);
+        fseek(fpmat, 2 * sizeof(int) + (world_rank * sizeof(int64_t)), SEEK_SET);
         fread(&sloc, sizeof(int64_t), 1, fpmat);
 
         fseek(fpmat, sloc, SEEK_SET);
@@ -46,13 +45,13 @@ SparseMat* readSparseMat(char* fName, int partScheme, char* inPartFile) {
         A->ja_mapped = (int *) malloc(sizeof(int) * A->nnz);
         A->val = (double *) malloc(sizeof(double) * A->nnz);
 
-        fread(A->ia, sizeof(int), A->m+1, fpmat);
+        fread(A->ia, sizeof(int), A->m + 1, fpmat);
         fread(A->ja, sizeof(int), A->nnz, fpmat);
         fread(A->val, sizeof(double), A->nnz, fpmat);
 
         A->store = STORE_BY_ROWS;
 
-        A->inPart  = malloc(sizeof(*(A->inPart)) * A->gn);
+        A->inPart = malloc(sizeof(*(A->inPart)) * A->gn);
         A->l2gMap = malloc(sizeof(int) * A->m);
 
         FILE *pf = fopen(inPartFile, "r");
@@ -62,16 +61,16 @@ SparseMat* readSparseMat(char* fName, int partScheme, char* inPartFile) {
 
         int ctr = 0;
         for (int i = 0; i < A->gn; ++i) {
-            if(A->inPart[i] == world_rank) {
+            if (A->inPart[i] == world_rank) {
                 A->l2gMap[ctr++] = i;
             }
         }
 
         int *tmp = malloc(sizeof(*tmp) * A->gn);
-        memset(tmp, 0, sizeof(*tmp)*A->gn);
+        memset(tmp, 0, sizeof(*tmp) * A->gn);
         A->n = 0;
         for (int i = 0; i < A->m; ++i) {
-            for (int j = A->ia[i]; j < A->ia[i+1]; ++j)
+            for (int j = A->ia[i]; j < A->ia[i + 1]; ++j)
                 ++(tmp[A->ja[j]]);
         }
 
@@ -96,7 +95,7 @@ SparseMat* readSparseMat(char* fName, int partScheme, char* inPartFile) {
  * Free SparseMat Object
  * Added by @Kutay
 */
-void sparseMatFree(SparseMat* A) {
+void sparseMatFree(SparseMat *A) {
     free(A->ia);
     free(A->ja);
     free(A->val);

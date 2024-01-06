@@ -8,19 +8,13 @@ int main() {
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-    char* f_inpart = "/home/kutay/CLionProjects/Spmm_TaRe/ri2010/part_files/ri2010.inpart.4";
-    char* f_mat = "/home/kutay/CLionProjects/Spmm_TaRe/ri2010/part_files/ri2010.inpart.4.bin";
-    char* f_comm = "/home/kutay/CLionProjects/Spmm_TaRe/ri2010/part_files/ri2010-4-phases.bin";
+    char* f_inpart = "/home/serdar/Code/PycharmProjects/cs490/out/citationCiteseer.inpart.8";
+    char* f_mat = "/home/serdar/Code/PycharmProjects/cs490/out/citationCiteseer.inpart.8.bin";
+    char* f_comm = "/home/serdar/Code/PycharmProjects/cs490/out/citationCiteseer.phases.8.bin";
     printf("Hello, World! %d %d\n", world_size, world_rank);
 
     SparseMat *A = readSparseMat(f_mat, STORE_BY_ROWS, f_inpart);
-    //printf("A->m: %d\n", A->m);
-    //printf("A->n: %d\n", A->n);
     TP_Comm *comm = readTwoPhaseComm(f_comm, 1);
-
-
-
-
 
     sparseMatFree(A);
     MPI_Finalize();;
