@@ -11,6 +11,8 @@ add_executable(Spmm_TaRe main.c
         inc/DenseMat.h
         matrix/DenseMat.c
         src/CommHandler.c
-        inc/CommHandler.h)
+        inc/CommHandler.h
+        inc/SpMM.h
+        matrix/SpMM.c)
 
 target_link_libraries(Spmm_TaRe PUBLIC MPI::MPI_C)

@@ -16,11 +16,13 @@ typedef struct {
     int *ja_mapped;
     int *ja;    // cols of A in csr format
     double *val; // values of A in csr format
+
     int m;
     int n;
     int nnz;
     int gm, gn;
     int store;
+
     int *l2gMap;
     int *inPart;
 } SparseMat;

@@ -104,3 +104,4 @@ void sparseMatFree(SparseMat *A) {
     free(A);
     A = NULL;
 }
+
