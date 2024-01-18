@@ -19,7 +19,9 @@ typedef struct {
  */
 typedef struct {
     CommBuffer sendBuffer;
+    int msgSendCount;
     CommBuffer recvBuffer;
+    int msgRecvCount;
 } OP_Comm;
 
 /*
@@ -39,6 +41,6 @@ typedef struct {
 void CommBufferInit(CommBuffer*  buff);
 void CommBufferFree(CommBuffer* buff);
 TP_Comm* readTwoPhaseComm(char* fName, int f);
-OP_Comm* readOnePhaseComm(char* fName);
+OP_Comm* readOnePhaseComm(char* fName, int f);
 
 #endif //SPMM_TARE_COMMHANDLER_H

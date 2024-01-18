@@ -117,7 +117,7 @@ TP_Comm* readTwoPhaseComm(char* fName, int f) {
  * parallel read of one phase communication data structure
  * Added by @Kutay
  */
-OP_Comm* readOnePhaseComm(char* fName) {
+OP_Comm* readOnePhaseComm(char* fName, int f) {
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -143,6 +143,24 @@ OP_Comm* readOnePhaseComm(char* fName) {
 
     fread(Comm->sendBuffer.row_map, sizeof(int), Comm->sendBuffer.count, fpmat);
     fread(Comm->recvBuffer.row_map, sizeof(int), Comm->recvBuffer.count, fpmat);
+
+    Comm->msgRecvCount = 0;
+    Comm->msgSendCount = 0;
+
+    for (int i = 1; i <= world_size ; ++i) {
+        if (Comm->sendBuffer.proc_map[i] - Comm->sendBuffer.proc_map[i-1] != 0) {
+            Comm->msgSendCount++;
+        }
+        if (Comm->recvBuffer.proc_map[i] - Comm->recvBuffer.proc_map[i-1] != 0) {
+            Comm->msgRecvCount++;
+        }
+    }
+
+    Comm->sendBuffer.f = f;
+    Comm->recvBuffer.f = f;
+
+    CommBufferInit(&(Comm->sendBuffer));
+
 
     return Comm;
 }

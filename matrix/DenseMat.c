@@ -36,9 +36,12 @@ Matrix* matrix_create_tp(int row, int col, int gm, int gn, TP_Comm* comm) {
     return matrix;
 }
 
-
-Matrix *matrix_create_op(int row, int col, int gm, int gn, OP_Comm *comm) {
-    //Not implemented yet
+Matrix* matrix_create_op(int row, int col, int gm, int gn, OP_Comm* comm) {
+    int total_row = row + comm->recvBuffer.count;
+    Matrix *matrix = matrix_create(total_row, col, gm, gn);
+    matrix->lcl_m = row;
+    matrix->phase_1 = row;
+    return matrix;
 }
 
 /*
