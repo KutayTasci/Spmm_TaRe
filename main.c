@@ -11,9 +11,9 @@ int main() {
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-    char* f_inpart = "/home/kutay/CLionProjects/Spmm_TaRe/ri2010/part_files/KarateClub.inpart.4";
-    char* f_mat = "/home/kutay/CLionProjects/Spmm_TaRe/ri2010/part_files/KarateClub.inpart.4.bin";
-    char* f_comm = "/home/kutay/CLionProjects/Spmm_TaRe/ri2010/part_files/KarateClub.phases.4.bin";
+    char* f_inpart = "/home/kutay/CLionProjects/Spmm_TaRe/data/part_files/KarateClub_adj.inpart.4";
+    char* f_mat = "/home/kutay/CLionProjects/Spmm_TaRe/data/part_files/KarateClub_adj.inpart.4.bin";
+    char* f_comm = "/home/kutay/CLionProjects/Spmm_TaRe/data/part_files/KarateClub_adj.phases.4.bin";
 
     int k = 4;
 
@@ -26,21 +26,17 @@ int main() {
     map_csr(A, comm);
 
     //print communication sizes for both phases
-    printf("Phase 1 send count: %d\n", comm->sendBuffer_p1.count);
-    printf("Phase 1 recv count: %d\n", comm->recvBuffer_p1.count);
-    printf("Phase 2 send count: %d\n", comm->sendBuffer_p2.count);
-    printf("Phase 2 recv count: %d\n", comm->recvBuffer_p2.count);
-
-
     spmm_tp(A, X, Y, comm);
 
-    /*
-    for (int i = 0; i < Y->lcl_m; i++) {
-        for (int j = 0; j < Y->n; j++) {
-            printf("%f ", Y->entries[i][j]);
+    if (world_rank == 0) {
+        for (int i = 0; i < Y->lcl_m; i++) {
+            for (int j = 0; j < Y->n; j++) {
+                printf("%f ", Y->entries[i][j]);
+            }
+            printf("\n");
         }
-        printf("\n");
-    }*/
+    }
+
 
     MPI_Barrier(MPI_COMM_WORLD);
     //matrix_free(X);

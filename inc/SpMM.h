@@ -16,5 +16,7 @@ void map_csr(SparseMat *A, TP_Comm *comm);
 void map_csr_op(SparseMat *A, OP_Comm *comm);
 void spmm_tp(SparseMat* A, Matrix* B, Matrix* C, TP_Comm* comm);
 void spmm_op(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm);
+void spmm_reduce_op(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm);
+void spmm_reduce_tp(SparseMat* A, Matrix* B, Matrix* C, TP_Comm* comm);
 
 #endif //SPMM_TARE_SPMM_H
