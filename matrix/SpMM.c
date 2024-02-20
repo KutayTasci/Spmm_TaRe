@@ -393,7 +393,7 @@ void spmm_reduce_op(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm) {
     for (i = 0;i < world_size; i++) {
         if (i != world_rank) {
             range = comm->recvBuffer.proc_map[i+1] - comm->recvBuffer.proc_map[i];
-            base = C->phase_2 + comm->recvBuffer.proc_map[i];
+            base = C->phase_1 + comm->recvBuffer.proc_map[i];
 
             if (range != 0) {
                 MPI_Isend(&(C->entries[base][0]),
