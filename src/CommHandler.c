@@ -2,9 +2,11 @@
 // Created by kutay on 20.11.2023.
 //
 #include "../inc/CommHandler.h"
+#include "../inc/DenseMat.h"
 #include <stdlib.h>
 #include <mpi.h>
 #include <stdio.h>
+
 
 /*
  * Reading CSR Matrix in parallel
@@ -113,6 +115,56 @@ TP_Comm* readTwoPhaseComm(char* fName, int f) {
     return Comm;
 }
 
+
+void prep_comm_tp(TP_Comm *Comm) {
+    int world_size, world_rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+    
+    int* send_ls1 = (int *) malloc(Comm->msgSendCount_p1 * sizeof(int));
+    int* recv_ls1 = (int *) malloc(Comm->msgRecvCount_p1 * sizeof(int));
+    int* send_ls2 = (int *) malloc(Comm->msgSendCount_p2 * sizeof(int));
+    int* recv_ls2 = (int *) malloc(Comm->msgRecvCount_p2 * sizeof(int));
+    
+    int ctr = 0, ctrp = 0;
+    for (int i = 0; i < world_size ; ++i) {
+        if (Comm->sendBuffer_p1.proc_map[i+1] - Comm->sendBuffer_p1.proc_map[i] != 0) {
+            send_ls1[ctr] = i;
+            ctr++;
+        }
+        
+        
+        if (Comm->recvBuffer_p1.proc_map[i+1] - Comm->recvBuffer_p1.proc_map[i] != 0) {
+            recv_ls1[ctrp] = i;
+            ctrp++;
+        }
+    }
+    ctr = 0, ctrp = 0;
+    for (int i = 0; i < world_size ; ++i) {
+        if (Comm->sendBuffer_p2.proc_map[i+1] - Comm->sendBuffer_p2.proc_map[i] != 0) {
+            send_ls2[ctr] = i;
+            ctr++;
+        }
+        
+        
+        if (Comm->recvBuffer_p2.proc_map[i+1] - Comm->recvBuffer_p2.proc_map[i] != 0) {
+            recv_ls2[ctrp] = i;
+            ctrp++;
+        }
+    }
+    
+    Comm->send_proc_list_p1 = send_ls1;
+    Comm->recv_proc_list_p1 = recv_ls1;
+    Comm->send_proc_list_p2 = send_ls2;
+    Comm->recv_proc_list_p2 = recv_ls2;
+    
+    Comm->send_ls_p1 = (MPI_Request*) malloc((Comm->msgSendCount_p1) * sizeof(MPI_Request));
+    Comm->recv_ls_p1 = (MPI_Request*) malloc((Comm->msgRecvCount_p1) * sizeof(MPI_Request));
+    Comm->send_ls_p2 = (MPI_Request*) malloc((Comm->msgSendCount_p2) * sizeof(MPI_Request));
+    Comm->recv_ls_p2 = (MPI_Request*) malloc((Comm->msgRecvCount_p2) * sizeof(MPI_Request));
+}
+
+
 /*
  * parallel read of one phase communication data structure
  * Added by @Kutay
@@ -155,12 +207,44 @@ OP_Comm* readOnePhaseComm(char* fName, int f) {
             Comm->msgRecvCount++;
         }
     }
-
+    
+    
+    
     Comm->sendBuffer.f = f;
     Comm->recvBuffer.f = f;
 
     CommBufferInit(&(Comm->sendBuffer));
-
+    
+    
+    
 
     return Comm;
+}
+
+void prep_comm_op(OP_Comm *Comm) {
+    int world_size, world_rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+    
+    int* send_ls = (int *) malloc(Comm->msgSendCount * sizeof(int));
+    int* recv_ls = (int *) malloc(Comm->msgRecvCount * sizeof(int));
+    
+    int ctr = 0, ctrp = 0;
+    for (int i = 0; i < world_size ; ++i) {
+        if (Comm->sendBuffer.proc_map[i+1] - Comm->sendBuffer.proc_map[i] != 0) {
+            send_ls[ctr] = i;
+            ctr++;
+        }
+        if (Comm->recvBuffer.proc_map[i+1] - Comm->recvBuffer.proc_map[i] != 0) {
+            recv_ls[ctrp] = i;
+            ctrp++;
+        }
+    }
+    
+    Comm->send_ls = (MPI_Request*) malloc((Comm->msgSendCount) * sizeof(MPI_Request));
+    Comm->recv_ls = (MPI_Request*) malloc((Comm->msgRecvCount) * sizeof(MPI_Request));
+
+    
+    Comm->send_proc_list = send_ls;
+    Comm->recv_proc_list = recv_ls;
 }

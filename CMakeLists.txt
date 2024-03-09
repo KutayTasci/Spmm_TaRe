@@ -1,7 +1,8 @@
-cmake_minimum_required(VERSION 3.26)
+cmake_minimum_required(VERSION 3.15.4)
 project(Spmm_TaRe C)
 
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 find_package(MPI REQUIRED)
 
