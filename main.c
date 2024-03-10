@@ -11,7 +11,8 @@ void matrix_print(Matrix *m) {
     printf("Rows: %d Columns: %d\n", m->m, m->n);
     int i;
     for (i = 0; i < 1; i++) {
-        for (int j = 0; j < m->n; j++) {
+        int j;
+	for (j = 0; j < m->n; j++) {
             printf("%1.7f ", m->entries[i][j]);
         }
         printf("\n");
@@ -180,16 +181,12 @@ int main(int argc, char *argv[]) {
         printf("Directory %s not found\n", argv[1]);
         return 1;
     }
-
+    if (world_rank == 0) {
+        printf("Analysis for %s, phase: %s, method: %s\n", argv[1], argv[2], argv[3]);
+    }
 
     if (strcmp(argv[2], "op") == 0) {
 
-        if (world_rank == 0) {
-            printf("%s \n", f_inpart);
-            printf("%s \n", f_mat);
-            printf("%s \n", f_comm);
-            printf("%s \n", f_one_comm);
-        }
 
         if (strcmp(argv[3], "reduce") == 0) {
             test_op(f_inpart, f_mat, f_one_comm, atoi(argv[4]), atoi(argv[5]), &spmm_reduce_op);

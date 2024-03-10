@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <mpi.h>
 #include <stdio.h>
-
+#include <stdint.h>
 
 /*
  * Reading CSR Matrix in parallel
