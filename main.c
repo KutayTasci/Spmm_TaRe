@@ -86,9 +86,9 @@ void test_op(char *f_inpart, char *f_mat, char *f_comm, int k, int iter, void (*
 //        }
     }
     calculate_and_print_runtimes(runtimes, iter, world_rank);
-    if (world_rank == 0) {
-        printf("Min runtime for current experiment=> %lf\n", min);
-    }
+//    if (world_rank == 0) {
+//        printf("Min runtime for current experiment=> %lf\n", min);
+//    }
 
     MPI_Barrier(MPI_COMM_WORLD);
     matrix_free(X);
