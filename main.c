@@ -12,10 +12,29 @@ void matrix_print(Matrix *m) {
     int i;
     for (i = 0; i < 1; i++) {
         int j;
-	for (j = 0; j < m->n; j++) {
+        for (j = 0; j < m->n; j++) {
             printf("%1.7f ", m->entries[i][j]);
         }
         printf("\n");
+    }
+}
+
+void calculate_and_print_runtimes(float *runtimes, int iter, int world_rank) {
+    if (world_rank == 0) {
+        float min = runtimes[0], max = runtimes[0], avg = runtimes[0];
+        for (int i = 1; i < iter; i++) {
+            if (runtimes[i] < min) {
+                min = runtimes[i];
+            }
+            if (runtimes[i] > max) {
+                max = runtimes[i];
+            }
+            avg += runtimes[i];
+        }
+        avg = avg / iter;
+        printf("%.6f,%.6f,%.6f\n", min, max, avg);
+        // deallocate the runtimes array
+        free(runtimes);
     }
 }
 
@@ -34,7 +53,7 @@ void test_op(char *f_inpart, char *f_mat, char *f_comm, int k, int iter, void (*
 
     map_csr_op(A, comm);
     prep_comm_op(comm);
-
+    float *runtimes = (float *) malloc(iter * sizeof(float));
     spmm(A, X, Y, comm);
     double t1, t2, t3;
     int min = 9999999;
@@ -57,14 +76,16 @@ void test_op(char *f_inpart, char *f_mat, char *f_comm, int k, int iter, void (*
         t2 = MPI_Wtime();
 
         if (world_rank == 0) {
-            printf("runtime=> %lf\n", t2 - t1);
+//            printf("runtime=> %lf\n", t2 - t1);
             //matrix_print(Y);
+            runtimes[i] = t2 - t1;
         }
-
-        if (min > t2 - t1) {
-            min = t2 - t1;
-        }
+//
+//        if (min > t2 - t1) {
+//            min = t2 - t1;
+//        }
     }
+    calculate_and_print_runtimes(runtimes, iter, world_rank);
     if (world_rank == 0) {
         printf("Min runtime for current experiment=> %lf\n", min);
     }
@@ -91,8 +112,8 @@ void test_tp(char *f_inpart, char *f_mat, char *f_comm, int k, int iter, void (*
 
     spmm(A, X, Y, comm);
     double t1, t2, t3;
-    int min = 9999999;
     int i;
+    float *runtimes = (float *) malloc(iter * sizeof(float));
     for (i = 0; i < iter; i++) {
         MPI_Barrier(MPI_COMM_WORLD);
         t1 = MPI_Wtime();
@@ -113,17 +134,16 @@ void test_tp(char *f_inpart, char *f_mat, char *f_comm, int k, int iter, void (*
 
 
         if (world_rank == 0) {
-            printf("runtime=> %lf\n", t2 - t1);
-            //matrix_print(Y); 
+//            printf("runtime=> %lf\n", t2 - t1);
+            //matrix_print(Y);
+            runtimes[i] = t2 - t1;
         }
-
-        if (min > t2 - t1) {
-            min = t2 - t1;
-        }
+//
+//        if (min > t2 - t1) {
+//            min = t2 - t1;
+//        }
     }
-    if (world_rank == 0) {
-        printf("Min runtime for current experiment=> %lf\n", min);
-    }
+    calculate_and_print_runtimes(runtimes, iter, world_rank);
 
     MPI_Barrier(MPI_COMM_WORLD);
     matrix_free(X);
@@ -182,11 +202,14 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     if (world_rank == 0) {
-        printf("Analysis for %s, phase: %s, method: %s\n", argv[1], argv[2], argv[3]);
+        char *dataset_name = strrchr(argv[1], '/');
+        dataset_name++; // skip "/"
+        // the csv headers are: dataset_name,comm_type,spmm_type,min_runtime,max_runtime,avg_runtime
+        // runtime fields will be filled in the test functions
+        printf("%s,%s,%s,", dataset_name, argv[2], argv[3]);
     }
 
     if (strcmp(argv[2], "op") == 0) {
-
 
         if (strcmp(argv[3], "reduce") == 0) {
             test_op(f_inpart, f_mat, f_one_comm, atoi(argv[4]), atoi(argv[5]), &spmm_reduce_op);
