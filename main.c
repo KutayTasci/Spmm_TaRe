@@ -5,6 +5,7 @@
 #include "inc/CommHandler.h"
 #include "inc/DenseMat.h"
 #include "inc/SpMM.h"
+#include <dirent.h>
 
 void matrix_print(Matrix *m) {
     printf("Rows: %d Columns: %d\n", m->m, m->n);
