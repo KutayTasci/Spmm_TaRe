@@ -9,7 +9,8 @@
 
 void matrix_print(Matrix *m) {
     printf("Rows: %d Columns: %d\n", m->m, m->n);
-    for (int i = 0; i < 1; i++) {
+    int i;
+    for (i = 0; i < 1; i++) {
         for (int j = 0; j < m->n; j++) {
             printf("%1.7f ", m->entries[i][j]);
         }
@@ -36,7 +37,8 @@ void test_op(char *f_inpart, char *f_mat, char *f_comm, int k, int iter, void (*
     spmm(A, X, Y, comm);
     double t1, t2, t3;
     int min = 9999999;
-    for (int i = 0; i < iter; i++) {
+    int i;
+    for (i = 0; i < iter; i++) {
         MPI_Barrier(MPI_COMM_WORLD);
         t1 = MPI_Wtime();
         //matrix_fill_double(X, i);
@@ -89,7 +91,8 @@ void test_tp(char *f_inpart, char *f_mat, char *f_comm, int k, int iter, void (*
     spmm(A, X, Y, comm);
     double t1, t2, t3;
     int min = 9999999;
-    for (int i = 0; i < iter; i++) {
+    int i;
+    for (i = 0; i < iter; i++) {
         MPI_Barrier(MPI_COMM_WORLD);
         t1 = MPI_Wtime();
         //matrix_fill_double(X, i);
