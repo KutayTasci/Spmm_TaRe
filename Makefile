@@ -1,6 +1,5 @@
-CC = gcc
+CC = mpicc
 CFLAGS = -std=c11 -O3
-LDFLAGS = -lmpi
 
 SRCDIR = .
 INCDIR = ./inc

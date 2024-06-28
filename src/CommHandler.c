@@ -59,7 +59,7 @@ void CommBufferFree(CommBuffer* buff) {
  * parallel read of two phase communication data structure
  * Added by @Kutay
  */
-TP_Comm* readTwoPhaseComm(char* fName, int f, int partial_reduce) {
+TP_Comm* readTwoPhaseComm(char* fName, int f) {
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -70,14 +70,12 @@ TP_Comm* readTwoPhaseComm(char* fName, int f, int partial_reduce) {
 
     fseek(fpmat, (world_rank*sizeof(int64_t)), SEEK_SET);
     fread(&sloc, sizeof(int64_t), 1, fpmat);
-    
 
     fseek(fpmat, sloc, SEEK_SET);
     fread(&(Comm->sendBuffer_p1.count), sizeof(int), 1, fpmat);
     fread(&(Comm->recvBuffer_p1.count), sizeof(int), 1, fpmat);
     fread(&(Comm->sendBuffer_p2.count), sizeof(int), 1, fpmat);
     fread(&(Comm->recvBuffer_p2.count), sizeof(int), 1, fpmat);
-    
 
     Comm->sendBuffer_p1.proc_map = (int *) malloc( (world_size + 1)* sizeof(int));
     Comm->sendBuffer_p1.row_map = (int *) malloc( Comm->sendBuffer_p1.count* sizeof(int));
@@ -128,26 +126,7 @@ TP_Comm* readTwoPhaseComm(char* fName, int f, int partial_reduce) {
 
     CommBufferInit(&(Comm->sendBuffer_p1));
     CommBufferInit(&(Comm->sendBuffer_p2));
-    
-    if (partial_reduce != 0) {
-    	Comm->reducer.init = true;
-		fread(&(Comm->reducer.reduce_count), sizeof(int), 1, fpmat);
-		Comm->reducer.reduce_list = (int *) malloc(Comm->reducer.reduce_count * sizeof(int));
-		Comm->reducer.reduce_list_mapped = (int *) malloc(Comm->reducer.reduce_count * sizeof(int));
-		Comm->reducer.reduce_source_mapped = (int **) malloc(Comm->reducer.reduce_count * sizeof(int *));
-		
-		for (int i = 0; i < Comm->reducer.reduce_count ;i++) {
-		    fread(&(Comm->reducer.reduce_list[i]), sizeof(unsigned int), 1, fpmat);
-		    int tmp;
-		    fread(&(tmp), sizeof(int), 1, fpmat);
-		    Comm->reducer.reduce_source_mapped[i] = (int *) malloc((tmp+1) * sizeof(int));
-		    Comm->reducer.reduce_source_mapped[i][0] = tmp;
-		    fread(&(Comm->reducer.reduce_source_mapped[i][1]), sizeof(int), tmp, fpmat);
-		}
-	} else {
-		Comm->reducer.init = false;
-	}
-    
+
     return Comm;
 }
 

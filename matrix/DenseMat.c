@@ -31,7 +31,6 @@ Matrix* matrix_create(int row, int col, int gm, int gn) {
 Matrix* matrix_create_tp(int row, int col, int gm, int gn, TP_Comm* comm) {
     int total_row = row + comm->recvBuffer_p1.count + comm->recvBuffer_p2.count;
     Matrix *matrix = matrix_create(total_row, col, gm, gn);
-    
     matrix->lcl_m = row;
     matrix->phase_1 = row;
     matrix->phase_2 = row + comm->recvBuffer_p1.count;
