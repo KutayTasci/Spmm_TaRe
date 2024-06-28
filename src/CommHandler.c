@@ -7,6 +7,21 @@
 #include <mpi.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <time.h>
+
+
+void shuffle(int array[], int n) {
+    srand(time(NULL)); // Seed the random number generator
+    for (int i = n - 1; i > 0; i--) {
+        // Generate a random index j such that 0 <= j <= i
+        int j = rand() % (i + 1);
+        
+        // Swap array[i] and array[j]
+        int temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+}
 
 /*
  * Reading CSR Matrix in parallel
@@ -44,7 +59,7 @@ void CommBufferFree(CommBuffer* buff) {
  * parallel read of two phase communication data structure
  * Added by @Kutay
  */
-TP_Comm* readTwoPhaseComm(char* fName, int f) {
+TP_Comm* readTwoPhaseComm(char* fName, int f, int partial_reduce) {
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -55,12 +70,14 @@ TP_Comm* readTwoPhaseComm(char* fName, int f) {
 
     fseek(fpmat, (world_rank*sizeof(int64_t)), SEEK_SET);
     fread(&sloc, sizeof(int64_t), 1, fpmat);
+    
 
     fseek(fpmat, sloc, SEEK_SET);
     fread(&(Comm->sendBuffer_p1.count), sizeof(int), 1, fpmat);
     fread(&(Comm->recvBuffer_p1.count), sizeof(int), 1, fpmat);
     fread(&(Comm->sendBuffer_p2.count), sizeof(int), 1, fpmat);
     fread(&(Comm->recvBuffer_p2.count), sizeof(int), 1, fpmat);
+    
 
     Comm->sendBuffer_p1.proc_map = (int *) malloc( (world_size + 1)* sizeof(int));
     Comm->sendBuffer_p1.row_map = (int *) malloc( Comm->sendBuffer_p1.count* sizeof(int));
@@ -111,7 +128,26 @@ TP_Comm* readTwoPhaseComm(char* fName, int f) {
 
     CommBufferInit(&(Comm->sendBuffer_p1));
     CommBufferInit(&(Comm->sendBuffer_p2));
-
+    
+    if (partial_reduce != 0) {
+    	Comm->reducer.init = true;
+		fread(&(Comm->reducer.reduce_count), sizeof(int), 1, fpmat);
+		Comm->reducer.reduce_list = (int *) malloc(Comm->reducer.reduce_count * sizeof(int));
+		Comm->reducer.reduce_list_mapped = (int *) malloc(Comm->reducer.reduce_count * sizeof(int));
+		Comm->reducer.reduce_source_mapped = (int **) malloc(Comm->reducer.reduce_count * sizeof(int *));
+		
+		for (int i = 0; i < Comm->reducer.reduce_count ;i++) {
+		    fread(&(Comm->reducer.reduce_list[i]), sizeof(unsigned int), 1, fpmat);
+		    int tmp;
+		    fread(&(tmp), sizeof(int), 1, fpmat);
+		    Comm->reducer.reduce_source_mapped[i] = (int *) malloc((tmp+1) * sizeof(int));
+		    Comm->reducer.reduce_source_mapped[i][0] = tmp;
+		    fread(&(Comm->reducer.reduce_source_mapped[i][1]), sizeof(int), tmp, fpmat);
+		}
+	} else {
+		Comm->reducer.init = false;
+	}
+    
     return Comm;
 }
 
@@ -120,7 +156,8 @@ void prep_comm_tp(TP_Comm *Comm) {
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-    
+    int i;
+    int base, range, part;
     int* send_ls1 = (int *) malloc(Comm->msgSendCount_p1 * sizeof(int));
     int* recv_ls1 = (int *) malloc(Comm->msgRecvCount_p1 * sizeof(int));
     int* send_ls2 = (int *) malloc(Comm->msgSendCount_p2 * sizeof(int));
@@ -153,8 +190,10 @@ void prep_comm_tp(TP_Comm *Comm) {
         }
     }
     
+    shuffle(send_ls1, Comm->msgSendCount_p1);
     Comm->send_proc_list_p1 = send_ls1;
     Comm->recv_proc_list_p1 = recv_ls1;
+    shuffle(send_ls2, Comm->msgSendCount_p2);
     Comm->send_proc_list_p2 = send_ls2;
     Comm->recv_proc_list_p2 = recv_ls2;
     
@@ -162,6 +201,8 @@ void prep_comm_tp(TP_Comm *Comm) {
     Comm->recv_ls_p1 = (MPI_Request*) malloc((Comm->msgRecvCount_p1) * sizeof(MPI_Request));
     Comm->send_ls_p2 = (MPI_Request*) malloc((Comm->msgSendCount_p2) * sizeof(MPI_Request));
     Comm->recv_ls_p2 = (MPI_Request*) malloc((Comm->msgRecvCount_p2) * sizeof(MPI_Request));
+    
+    
 }
 
 
@@ -244,7 +285,7 @@ void prep_comm_op(OP_Comm *Comm) {
     Comm->send_ls = (MPI_Request*) malloc((Comm->msgSendCount) * sizeof(MPI_Request));
     Comm->recv_ls = (MPI_Request*) malloc((Comm->msgRecvCount) * sizeof(MPI_Request));
 
-    
+    shuffle(send_ls, Comm->msgSendCount);
     Comm->send_proc_list = send_ls;
     Comm->recv_proc_list = recv_ls;
 }

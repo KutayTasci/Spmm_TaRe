@@ -25,4 +25,7 @@ void matrix_free(Matrix *m);
 void matrix_fill_int(Matrix *m, int num);
 void matrix_fill_double(Matrix *m, double num);
 
+void map_comm_tp (TP_Comm* comm, Matrix *B);
+void map_comm_op (OP_Comm* comm, Matrix *B);
+
 #endif //SPMM_TARE_DENSEMAT_H

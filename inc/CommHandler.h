@@ -5,6 +5,9 @@
 #ifndef SPMM_TARE_COMMHANDLER_H
 #define SPMM_TARE_COMMHANDLER_H
 #include <mpi.h>
+#include <stdbool.h>
+#define TP_PARTIAL_REDUCE 1
+#define TP_STANDARD 0
 
 typedef struct {
     int *proc_map; //world_size+1
@@ -33,7 +36,23 @@ typedef struct {
 /*
  * Two phase communication data structure added by @Kutay
  */
+
 typedef struct {
+	bool init;
+	
+    int reduce_count;
+    int *reduce_list;
+    int *reduce_list_mapped;
+    int **reduce_source_mapped;
+    int *reduce_local;
+    int lcl_count;
+    int *reduce_nonlocal;
+    int nlcl_count;
+} Reducer;
+
+typedef struct {
+    Reducer reducer;
+    
     CommBuffer sendBuffer_p1;
     int msgSendCount_p1;
     MPI_Request *send_ls_p1;
@@ -57,7 +76,7 @@ typedef struct {
 
 void CommBufferInit(CommBuffer*  buff);
 void CommBufferFree(CommBuffer* buff);
-TP_Comm* readTwoPhaseComm(char* fName, int f);
+TP_Comm* readTwoPhaseComm(char* fName, int f, int partial_reduce);
 OP_Comm* readOnePhaseComm(char* fName, int f);
 
 void prep_comm_tp(TP_Comm *Comm);
