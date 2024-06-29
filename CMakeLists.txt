@@ -14,6 +14,8 @@ add_executable(Spmm_TaRe main.c
         src/CommHandler.c
         inc/CommHandler.h
         inc/SpMM.h
-        matrix/SpMM.c)
+        matrix/SpMM.c
+        inc/Reader.h
+        src/Reader.c)
 
 target_link_libraries(Spmm_TaRe PUBLIC MPI::MPI_C)
