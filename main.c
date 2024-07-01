@@ -32,7 +32,7 @@ void calculate_and_print_runtimes(float *runtimes, int iter, int world_rank) {
             avg += runtimes[i];
         }
         avg = avg / iter;
-        printf("%.6f,%.6f,%.6f\n", min, max, avg);
+        printf("%.6f,%.6f,%.6f", min, max, avg);
         // deallocate the runtimes array
         free(runtimes);
     }
@@ -56,11 +56,11 @@ void test_op(ReaderRet *args, void (*spmm)()) {
     map_comm_op(comm, X);
     float *runtimes = (float *) malloc(args->iter * sizeof(float));
     int i;
-    double t1, t2, t3;
+    wct times = wct_init();
 
     //warmup iteration
     for (i = 0; i < 10; i++) {
-        spmm(A, X, Y, comm, WCT_FULL, &(t2));
+        spmm(A, X, Y, comm, WCT_FULL, &times);
     }
 
 
@@ -68,17 +68,20 @@ void test_op(ReaderRet *args, void (*spmm)()) {
         matrix_fill_double(X, 0.0);
 
 
-        spmm(A, X, Y, comm, WCT_FULL, &(t2));
+        spmm(A, X, Y, comm, WCT_FULL, &times);
 
 
         if (world_rank == 0) {
-            runtimes[i] = t2;
+            runtimes[i] = times.total_t;
         }
 
     }
     calculate_and_print_runtimes(runtimes, args->iter, world_rank);
-
-
+    times.total_t = 0; //reset the total time
+    spmm(A, X, Y, comm, WCT_PROFILE, &times);
+    if (world_rank == 0) {
+        wct_print(&times);
+    }
     MPI_Barrier(MPI_COMM_WORLD);
     matrix_free(X);
     sparseMatFree(A);
@@ -106,11 +109,10 @@ void test_tp(ReaderRet *args, void (*spmm)()) {
     map_comm_tp(comm, X);
 
     int i;
-    double t1, t2, t3;
-    double *wct_arr;
+    wct times = wct_init();
     //10 iteration warmup
     for (i = 0; i < 10; i++) {
-        spmm(A, X, Y, comm, WCT_FULL, &(t2));
+        spmm(A, X, Y, comm, WCT_FULL, &times);
     }
 
     float *runtimes = (float *) malloc(args->iter * sizeof(float));
@@ -118,25 +120,21 @@ void test_tp(ReaderRet *args, void (*spmm)()) {
     for (i = 0; i < args->iter; i++) {
         matrix_fill_double(X, 0.0);
 
-        spmm(A, X, Y, comm, WCT_FULL, &(t2));
+        spmm(A, X, Y, comm, WCT_FULL, &times);
 
 
         if (world_rank == 0) {
-            runtimes[i] = t2;
+            runtimes[i] = times.total_t;
         }
 
     }
 
     calculate_and_print_runtimes(runtimes, args->iter, world_rank);
-    wct_arr = (double *) malloc(5 * sizeof(double));
-    spmm(A, X, Y, comm, WCT_PROFILE, wct_arr);
+    times.total_t = 0; //reset the total time
+    spmm(A, X, Y, comm, WCT_PROFILE, &times);
     if (world_rank == 0) {
-        for (i = 0; i < 5; i++) {
-            printf("%lf ", wct_arr[i]);
-        }
-        printf("\n");
+        wct_print(&times);
     }
-
     MPI_Barrier(MPI_COMM_WORLD);
     matrix_free(X);
     sparseMatFree(A);
