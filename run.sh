@@ -1,7 +1,7 @@
 # variables
 exec_path="./cmake-build-release/Spmm_TaRe"
-folder_path="/home/serdar/Code/PycharmProjects/cs490/folders/" # do not forget the slash at the end
-declare -a dsets=("Flickr-7-0.3-cpn1")
+folder_path="/home/serdar/Code/PycharmProjects/DM-Partition/folders/" # do not forget the slash at the end
+declare -a dsets=("pattern1-7-0.3")
 declare -a comm_types=("op" "tp")
 declare -a reduces=("noreduce" "reduce")
 prc_count=7
@@ -18,7 +18,7 @@ done
 # adjust dname_text
 dname_text="dname"
 printf -v dname_text "%-${max_length}s" $dname_text
-printf -v other_headers "%-4s,%-5s,%-8s,%-8s,%-8s,%-8s,%-8s,%-8s,%-8s,%-8s,%-8s" "comm" "reduce" "min_run" "max_run" "avg_run" "p1_red" "p1_comm" "p2_red" "p2_comm" "SpMM" "total"
+printf -v other_headers "%-4s,%-5s,%-8s,%-8s,%-8s,%-8s,%-8s,%-8s,%-8s,%-8s,%-8s" "comm" "reduce" "min_run" "max_run" "avg_run" "p1_calc" "p1_comm" "p2_calc" "p2_comm" "fin_calc" "total"
 echo -e "$dname_text,$other_headers"
 # run the program
 for dset_name in "${dsets[@]}"
