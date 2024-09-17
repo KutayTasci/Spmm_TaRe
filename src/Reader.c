@@ -50,20 +50,22 @@ ReaderRet parseFileFromArgs(int argc, char *argv[]) {
     d = opendir(argv[1]);
     if (d) {
         while ((dir = readdir(d)) != NULL) {
+            char *dest = NULL;
             // mat should come first since it contains inpart
             if (strstr(dir->d_name, mat_str) != NULL) {
-                strcpy(ret.f_mat, argv[1]);
-                strcat(ret.f_mat, "/");
-                strcat(ret.f_mat, dir->d_name);
+                dest = ret.f_mat;
             } else if (strstr(dir->d_name, inpart_str) != NULL) {
-                strcpy(ret.f_inpart, argv[1]);
-                strcat(ret.f_inpart, "/");
-                strcat(ret.f_inpart, dir->d_name);
+                dest = ret.f_inpart;
             } else if (strstr(dir->d_name, comm_str) != NULL) {
-                strcpy(ret.f_comm, argv[1]);
-                strcat(ret.f_comm, "/");
-                strcat(ret.f_comm, dir->d_name);
+                dest = ret.f_comm;
+            } else {
+                continue;
             }
+            strcpy(dest, argv[1]);
+            if (dest[strlen(dest) - 1] != '/') {
+                strcat(dest, "/");
+            }
+            strcat(dest, dir->d_name);
         }
         closedir(d);
     } else {

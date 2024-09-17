@@ -94,10 +94,8 @@ void test_tp(ReaderRet *args, void (*spmm)()) {
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
     SparseMat *A = readSparseMat(args->f_mat, STORE_BY_ROWS, args->f_inpart);
-
     //FOR PARTIAL REDUCE TP_PARTIAL_REDUCE OR TP_STANDARD FOR NOR REDUCE
     TP_Comm *comm = readTwoPhaseComm(args->f_comm, args->k, args->reduce);
-
     Matrix *X = matrix_create_tp(A->m, args->k, A->gn, args->k, comm);
 
     matrix_fill_double(X, 1.0);
@@ -114,7 +112,6 @@ void test_tp(ReaderRet *args, void (*spmm)()) {
     for (i = 0; i < 10; i++) {
         spmm(A, X, Y, comm, WCT_FULL, &times);
     }
-
     float *runtimes = (float *) malloc(args->iter * sizeof(float));
 
     for (i = 0; i < args->iter; i++) {

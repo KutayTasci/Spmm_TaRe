@@ -67,7 +67,11 @@ TP_Comm *readTwoPhaseComm(char *fName, int f, bool partial_reduce) {
     int64_t sloc;
     TP_Comm *Comm = (TP_Comm *) malloc(sizeof(TP_Comm));
     FILE *fpmat = fopen(fName, "rb");
-
+    if (fpmat == NULL) {
+        if (world_rank == 0)
+            printf("Phase comm file named '%s' not found\n", fName);
+        exit(1);
+    }
     fseek(fpmat, (world_rank * sizeof(int64_t)), SEEK_SET);
     fread(&sloc, sizeof(int64_t), 1, fpmat);
 
@@ -95,7 +99,6 @@ TP_Comm *readTwoPhaseComm(char *fName, int f, bool partial_reduce) {
     fread(Comm->recvBuffer_p1.proc_map, sizeof(int), world_size + 1, fpmat);
     fread(Comm->sendBuffer_p2.proc_map, sizeof(int), world_size + 1, fpmat);
     fread(Comm->recvBuffer_p2.proc_map, sizeof(int), world_size + 1, fpmat);
-
     Comm->msgRecvCount_p1 = 0;
     Comm->msgRecvCount_p2 = 0;
     Comm->msgSendCount_p1 = 0;

@@ -18,10 +18,10 @@ typedef struct ReaderRet {
     bool reduce;
     int k;
     int iter;
-    char f_inpart[100];
-    char f_mat[100];
-    char f_comm[100]; // 2phase or 1phase
-    char dataset_name[50];
+    char f_inpart[200];
+    char f_mat[200];
+    char f_comm[200]; // 2phase or 1phase
+    char dataset_name[100];
 } ReaderRet;
 
 ReaderRet parseFileFromArgs(int argc, char *argv[]);

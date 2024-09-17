@@ -208,7 +208,6 @@ void spmm_tp_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
 
 void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time) {
     int i, j, k;
-
     int ind, ind_c;
     int range;
     int base, part;
@@ -221,7 +220,6 @@ void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time
     MPI_Startall(comm->msgRecvCount_p1, comm->recv_ls_p1);
 
     MPI_Startall(comm->msgRecvCount_p2, comm->recv_ls_p2);
-
     int idx, vtx, tmp;
     for (i = 0; i < comm->reducer.lcl_count; i++) {
         idx = comm->reducer.reduce_local[i];
@@ -231,13 +229,12 @@ void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time
             B->entries[vtx][k] = 0;
         }
         for (int j = 1; j <= comm->reducer.reduce_source_mapped[idx][0]; j++) {
-            tmp = comm->reducer.reduce_source_mapped[i][j];
+            tmp = comm->reducer.reduce_source_mapped[idx][j];
             for (k = 0; k < C->n; k++) {
                 B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k];
             }
         }
     }
-
     for (i = 0; i < comm->msgSendCount_p1; i++) {
         part = comm->send_proc_list_p1[i];
         range = comm->sendBuffer_p1.proc_map[part + 1] - comm->sendBuffer_p1.proc_map[part];
@@ -254,10 +251,8 @@ void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time
                   MPI_COMM_WORLD);
         //&(Comm->send_ls_p2[i]));
     }
-
     //MPI_Waitall(comm->msgSendCount_p1, comm->send_ls_p1, MPI_STATUSES_IGNORE);
     MPI_Waitall(comm->msgRecvCount_p1, comm->recv_ls_p1, MPI_STATUSES_IGNORE);
-
     for (i = 0; i < comm->reducer.nlcl_count; i++) {
         idx = comm->reducer.reduce_nonlocal[i];
         vtx = comm->reducer.reduce_list_mapped[idx];
@@ -265,14 +260,12 @@ void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time
             B->entries[vtx][k] = 0;
         }
         for (int j = 1; j <= comm->reducer.reduce_source_mapped[idx][0]; j++) {
-            tmp = comm->reducer.reduce_source_mapped[i][j];
+            tmp = comm->reducer.reduce_source_mapped[idx][j];
             for (k = 0; k < C->n; k++) {
                 B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k];
             }
         }
     }
-
-
     for (i = 0; i < comm->msgSendCount_p2; i++) {
         part = comm->send_proc_list_p2[i];
         range = comm->sendBuffer_p2.proc_map[part + 1] - comm->sendBuffer_p2.proc_map[part];
@@ -290,7 +283,6 @@ void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time
                   MPI_COMM_WORLD);
         //&(Comm->send_ls_p2[i]));
     }
-
 
     MPI_Waitall(comm->msgRecvCount_p2, comm->recv_ls_p2, MPI_STATUSES_IGNORE);
     //MPI_Waitall(comm->msgSendCount_p2, comm->send_ls_p2, MPI_STATUSES_IGNORE);
@@ -328,7 +320,7 @@ void spmm_tp_pr_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_
             B->entries[vtx][k] = 0;
         }
         for (int j = 1; j <= comm->reducer.reduce_source_mapped[idx][0]; j++) {
-            tmp = comm->reducer.reduce_source_mapped[i][j];
+            tmp = comm->reducer.reduce_source_mapped[idx][j];
             for (k = 0; k < C->n; k++) {
                 B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k];
             }
@@ -372,7 +364,7 @@ void spmm_tp_pr_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_
             B->entries[vtx][k] = 0;
         }
         for (int j = 1; j <= comm->reducer.reduce_source_mapped[idx][0]; j++) {
-            tmp = comm->reducer.reduce_source_mapped[i][j];
+            tmp = comm->reducer.reduce_source_mapped[idx][j];
             for (k = 0; k < C->n; k++) {
                 B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k];
             }

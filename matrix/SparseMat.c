@@ -24,7 +24,6 @@ SparseMat *readSparseMat(char *fName, int partScheme, char *inPartFile) {
         // Get the rank of the process
         int world_rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-
         int64_t sloc;
 
         SparseMat *A = (SparseMat *) malloc(sizeof(SparseMat));
@@ -58,7 +57,6 @@ SparseMat *readSparseMat(char *fName, int partScheme, char *inPartFile) {
         FILE *pf = fopen(inPartFile, "rb");
         fread(A->inPart, sizeof(int), A->gn, pf);
         fclose(pf);
-
         int ctr = 0;
         for (int i = 0; i < A->gn; ++i) {
             if (A->inPart[i] == world_rank) {
