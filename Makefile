@@ -1,6 +1,6 @@
-CC = gcc
+CC = gcc  # Use GCC instead of icx
 CFLAGS = -std=c11 -O3
-LDFLAGS = -lmpi
+LDFLAGS = -lmpi -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
 
 SRCDIR = .
 INCDIR = ./inc

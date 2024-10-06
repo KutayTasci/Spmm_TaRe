@@ -8,6 +8,8 @@
 #define STORE_BY_COLUMNS 0
 #define STORE_BY_ROWS    1
 
+#include "mkl.h"
+
 /*
  * Sparse matrix data structure added by @Kutay
  */
@@ -25,6 +27,10 @@ typedef struct {
 
     int *l2gMap;
     int *inPart;
+    
+    sparse_matrix_t BLAS_A;
+    
+    
 } SparseMat;
 
 SparseMat* readSparseMat(char* fName, int partScheme, char* inPartFile);

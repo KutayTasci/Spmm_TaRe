@@ -14,6 +14,7 @@
  * File format follows the output format of "Util" code by Oguz Selvitopi
  * Added by @Kutay
 */
+
 SparseMat *readSparseMat(char *fName, int partScheme, char *inPartFile) {
     if (partScheme == STORE_BY_COLUMNS) {
         printf("STORE_BY_COLUMNS not implemented.");
@@ -83,7 +84,9 @@ SparseMat *readSparseMat(char *fName, int partScheme, char *inPartFile) {
         }
 
         free(tmp);
-
+		
+		
+		
         fclose(fpmat);
         return A;
     }
