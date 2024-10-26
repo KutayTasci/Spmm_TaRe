@@ -286,7 +286,6 @@ void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time
 
     MPI_Waitall(comm->msgRecvCount_p2, comm->recv_ls_p2, MPI_STATUSES_IGNORE);
     //MPI_Waitall(comm->msgSendCount_p2, comm->send_ls_p2, MPI_STATUSES_IGNORE);
-
     for (i = 0; i < A->m; i++) {
         for (j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];

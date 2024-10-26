@@ -146,6 +146,8 @@ TP_Comm *readTwoPhaseComm(char *fName, int f, bool partial_reduce) {
             Comm->reducer.reduce_source_mapped[i] = (int *) malloc((tmp + 1) * sizeof(int));
             Comm->reducer.reduce_source_mapped[i][0] = tmp;
             fread(&(Comm->reducer.reduce_source_mapped[i][1]), sizeof(int), tmp, fpmat);
+            // skip values
+            fseek(fpmat, tmp * sizeof(double), SEEK_CUR);
         }
     } else {
         Comm->reducer.init = false;
@@ -204,8 +206,6 @@ void prep_comm_tp(TP_Comm *Comm) {
     Comm->recv_ls_p1 = (MPI_Request *) malloc((Comm->msgRecvCount_p1) * sizeof(MPI_Request));
     Comm->send_ls_p2 = (MPI_Request *) malloc((Comm->msgSendCount_p2) * sizeof(MPI_Request));
     Comm->recv_ls_p2 = (MPI_Request *) malloc((Comm->msgRecvCount_p2) * sizeof(MPI_Request));
-
-
 }
 
 
