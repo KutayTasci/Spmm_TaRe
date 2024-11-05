@@ -138,16 +138,17 @@ TP_Comm *readTwoPhaseComm(char *fName, int f, bool partial_reduce) {
         Comm->reducer.reduce_list = (int *) malloc(Comm->reducer.reduce_count * sizeof(int));
         Comm->reducer.reduce_list_mapped = (int *) malloc(Comm->reducer.reduce_count * sizeof(int));
         Comm->reducer.reduce_source_mapped = (int **) malloc(Comm->reducer.reduce_count * sizeof(int *));
+        Comm->reducer.reduce_factors = (double **) malloc(Comm->reducer.reduce_count * sizeof(double *));
 
         for (int i = 0; i < Comm->reducer.reduce_count; i++) {
             fread(&(Comm->reducer.reduce_list[i]), sizeof(unsigned int), 1, fpmat);
             int tmp;
             fread(&(tmp), sizeof(int), 1, fpmat);
             Comm->reducer.reduce_source_mapped[i] = (int *) malloc((tmp + 1) * sizeof(int));
+            Comm->reducer.reduce_factors[i] = (double *) malloc(tmp * sizeof(double));
             Comm->reducer.reduce_source_mapped[i][0] = tmp;
             fread(&(Comm->reducer.reduce_source_mapped[i][1]), sizeof(int), tmp, fpmat);
-            // skip values
-            fseek(fpmat, tmp * sizeof(double), SEEK_CUR);
+            fread(Comm->reducer.reduce_factors[i], sizeof(double), tmp, fpmat);
         }
     } else {
         Comm->reducer.init = false;

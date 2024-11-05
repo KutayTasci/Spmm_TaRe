@@ -221,6 +221,7 @@ void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time
 
     MPI_Startall(comm->msgRecvCount_p2, comm->recv_ls_p2);
     int idx, vtx, tmp;
+    double factor;
     for (i = 0; i < comm->reducer.lcl_count; i++) {
         idx = comm->reducer.reduce_local[i];
         vtx = comm->reducer.reduce_list_mapped[idx];
@@ -230,8 +231,9 @@ void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time
         }
         for (int j = 1; j <= comm->reducer.reduce_source_mapped[idx][0]; j++) {
             tmp = comm->reducer.reduce_source_mapped[idx][j];
+            factor = comm->reducer.reduce_factors[idx][j - 1];
             for (k = 0; k < C->n; k++) {
-                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k];
+                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k] * factor;
             }
         }
     }
@@ -261,8 +263,9 @@ void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time
         }
         for (int j = 1; j <= comm->reducer.reduce_source_mapped[idx][0]; j++) {
             tmp = comm->reducer.reduce_source_mapped[idx][j];
+            factor = comm->reducer.reduce_factors[idx][j - 1];
             for (k = 0; k < C->n; k++) {
-                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k];
+                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k] * factor;
             }
         }
     }
@@ -309,6 +312,7 @@ void spmm_tp_pr_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_
     memset(C->entries[0], 0, C->m * C->n * sizeof(double));
 
     int idx, vtx, tmp;
+    double factor;
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
     for (i = 0; i < comm->reducer.lcl_count; i++) {
@@ -320,8 +324,9 @@ void spmm_tp_pr_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_
         }
         for (int j = 1; j <= comm->reducer.reduce_source_mapped[idx][0]; j++) {
             tmp = comm->reducer.reduce_source_mapped[idx][j];
+            factor = comm->reducer.reduce_factors[idx][j - 1];
             for (k = 0; k < C->n; k++) {
-                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k];
+                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k] * factor;
             }
         }
     }
@@ -364,8 +369,9 @@ void spmm_tp_pr_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_
         }
         for (int j = 1; j <= comm->reducer.reduce_source_mapped[idx][0]; j++) {
             tmp = comm->reducer.reduce_source_mapped[idx][j];
+            factor = comm->reducer.reduce_factors[idx][j - 1];
             for (k = 0; k < C->n; k++) {
-                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k];
+                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k] * factor;
             }
         }
     }
