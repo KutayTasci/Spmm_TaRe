@@ -48,11 +48,11 @@ void spmm_tp_std(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
     int i, j, k;
-    double t1, t2, t3;
+    double t1, t2, t3, t4;
 
     memset(C->entries[0], 0, C->m * C->n * sizeof(double));
 
-    int ind, ind_c;
+    int ind;
     int range;
     int base, part;
     MPI_Barrier(MPI_COMM_WORLD);
@@ -79,10 +79,10 @@ void spmm_tp_std(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
     }
 
 
-
+    t3 = MPI_Wtime();
     //MPI_Waitall(comm->msgSendCount_p1, comm->send_ls_p1, MPI_STATUSES_IGNORE);
     MPI_Waitall(comm->msgRecvCount_p1, comm->recv_ls_p1, MPI_STATUSES_IGNORE);
-
+    t4 = MPI_Wtime();
 
     for (i = 0; i < comm->msgSendCount_p2; i++) {
         part = comm->send_proc_list_p2[i];
@@ -118,6 +118,13 @@ void spmm_tp_std(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
     MPI_Barrier(MPI_COMM_WORLD);
     t2 = MPI_Wtime();
     wct_time->total_t = t2 - t1;
+    double recv_wait_t = t4 - t3;
+    double avg_recv_wait_t;
+    MPI_Reduce(&recv_wait_t, &avg_recv_wait_t, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    if (world_rank == 0) {
+        avg_recv_wait_t = avg_recv_wait_t / world_size;
+        printf("Average receive wait time: %f\n", avg_recv_wait_t);
+    }
 }
 
 void spmm_tp_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time) {
