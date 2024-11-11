@@ -80,7 +80,6 @@ void spmm_tp_std(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
 
 
     t3 = MPI_Wtime();
-    //MPI_Waitall(comm->msgSendCount_p1, comm->send_ls_p1, MPI_STATUSES_IGNORE);
     MPI_Waitall(comm->msgRecvCount_p1, comm->recv_ls_p1, MPI_STATUSES_IGNORE);
     t4 = MPI_Wtime();
 
@@ -104,7 +103,6 @@ void spmm_tp_std(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
 
 
     MPI_Waitall(comm->msgRecvCount_p2, comm->recv_ls_p2, MPI_STATUSES_IGNORE);
-    //MPI_Waitall(comm->msgSendCount_p2, comm->send_ls_p2, MPI_STATUSES_IGNORE);
 
 
     for (i = 0; i < A->m; i++) {
@@ -119,7 +117,7 @@ void spmm_tp_std(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
     t2 = MPI_Wtime();
     wct_time->total_t = t2 - t1;
     double recv_wait_t = t4 - t3;
-    double avg_recv_wait_t;
+    double avg_recv_wait_t = 0;
     MPI_Reduce(&recv_wait_t, &avg_recv_wait_t, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     if (world_rank == 0) {
         avg_recv_wait_t = avg_recv_wait_t / world_size;
