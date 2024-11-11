@@ -117,12 +117,12 @@ void spmm_tp_std(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
     t2 = MPI_Wtime();
     wct_time->total_t = t2 - t1;
     double recv_wait_t = t4 - t3;
-    double avg_recv_wait_t = 0;
-    MPI_Reduce(&recv_wait_t, &avg_recv_wait_t, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    double max_recv_wait_t;
+    MPI_Reduce(&recv_wait_t, &max_recv_wait_t, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     if (world_rank == 0) {
-        avg_recv_wait_t = avg_recv_wait_t / world_size;
-        printf("Average receive wait time: %f\n", avg_recv_wait_t);
+        printf("Max Recv Wait Time: %f\n", max_recv_wait_t);
     }
+    
 }
 
 void spmm_tp_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time) {
