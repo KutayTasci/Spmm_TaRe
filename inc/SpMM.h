@@ -31,6 +31,8 @@ void wct_print(wct *wct_time);
 
 void map_csr(SparseMat *A, TP_Comm *comm);
 
+void map_dependencies(SparseMat *A, TP_Comm *comm);
+
 void map_csr_op(SparseMat *A, OP_Comm *comm);
 
 //SPMM WRAPPERS ONLY CALL THESE ON THE MAIN FUNCTION

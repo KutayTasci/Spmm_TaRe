@@ -52,12 +52,22 @@ typedef struct {
 } Reducer;
 
 typedef struct {
+    int *proc_map;
+    int *dep_map;
+    int *dep_counts;
+    int *dep_counts_copy;
+    int *ready_to_send_prcs;
+    int ready_to_send_count;
+} Comm_Dependencies;
+
+typedef struct {
     Reducer reducer;
 
     CommBuffer sendBuffer_p1;
     int msgSendCount_p1;
     MPI_Request *send_ls_p1;
     int *send_proc_list_p1;
+    Comm_Dependencies send_dep_p2;
 
     CommBuffer recvBuffer_p1;
     int msgRecvCount_p1;
@@ -86,5 +96,9 @@ OP_Comm *readOnePhaseComm(char *fName, int f);
 void prep_comm_tp(TP_Comm *Comm);
 
 void prep_comm_op(OP_Comm *Comm);
+
+void init_comm_dependencies(Comm_Dependencies *dep, int world_size);
+
+void add_binary(int *arr, int size, int num);
 
 #endif //SPMM_TARE_COMMHANDLER_H

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <mpi.h>
 #include <string.h>
+#include <unistd.h>
 #include "inc/SparseMat.h"
 #include "inc/CommHandler.h"
 #include "inc/DenseMat.h"
@@ -105,6 +106,7 @@ void test_tp(ReaderRet *args, void (*spmm)()) {
 
     prep_comm_tp(comm);
     map_comm_tp(comm, X);
+    map_dependencies(A, comm);
 
     int i;
     wct times = wct_init();
@@ -144,7 +146,7 @@ int main(int argc, char *argv[]) {
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-
+//    sleep(20); // for gdb attach
     ReaderRet parsedArgs = parseFileFromArgs(argc, argv);
     if (!parsedArgs.is_valid) {
         MPI_Finalize();

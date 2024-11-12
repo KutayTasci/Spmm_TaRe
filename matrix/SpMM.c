@@ -4,6 +4,22 @@
 #include "../inc/SpMM.h"
 #include <string.h>
 
+void send_data(TP_Comm *comm, Matrix *B, int part) {
+    int j, range, base, ind;
+    range = comm->sendBuffer_p2.proc_map[part + 1] - comm->sendBuffer_p2.proc_map[part];
+    base = comm->sendBuffer_p2.proc_map[part];
+
+    for (j = 0; j < range; j++) {
+        ind = comm->sendBuffer_p2.row_map_lcl[base + j];
+        memcpy(comm->sendBuffer_p2.buffer[base + j], B->entries[ind], sizeof(double) * B->n);
+    }
+    MPI_Rsend(&(comm->sendBuffer_p2.buffer[base][0]),
+              range * B->n,
+              MPI_DOUBLE,
+              part,
+              1,
+              MPI_COMM_WORLD);
+}
 
 void spmm_tp(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, int mode, wct *wct_time) {
 
@@ -78,28 +94,53 @@ void spmm_tp_std(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
         //&(Comm->send_ls_p2[i]));
     }
 
-
-    t3 = MPI_Wtime();
-    MPI_Waitall(comm->msgRecvCount_p1, comm->recv_ls_p1, MPI_STATUSES_IGNORE);
-    t4 = MPI_Wtime();
-
-    for (i = 0; i < comm->msgSendCount_p2; i++) {
-        part = comm->send_proc_list_p2[i];
-        range = comm->sendBuffer_p2.proc_map[part + 1] - comm->sendBuffer_p2.proc_map[part];
-        base = comm->sendBuffer_p2.proc_map[part];
-
-        for (j = 0; j < range; j++) {
-            ind = comm->sendBuffer_p2.row_map_lcl[base + j];
-            memcpy(comm->sendBuffer_p2.buffer[base + j], B->entries[ind], sizeof(double) * B->n);
-        }
-        MPI_Rsend(&(comm->sendBuffer_p2.buffer[base][0]),
-                  range * B->n,
-                  MPI_DOUBLE,
-                  part,
-                  1,
-                  MPI_COMM_WORLD);
-        //&(Comm->send_ls_p2[i]));
+    for (int i = 0; i < comm->send_dep_p2.ready_to_send_count; i++) {
+        send_data(comm, B, comm->send_dep_p2.ready_to_send_prcs[i]);
     }
+
+    // DEP impl
+    int dep_base, dep_end;
+    for (int m = 0; m < comm->msgRecvCount_p1; m++) {
+        MPI_Waitany(comm->msgRecvCount_p1, comm->recv_ls_p1, &i, MPI_STATUS_IGNORE);
+        // check if there is a task available to launch
+        if (i != MPI_UNDEFINED) {
+            i = comm->recv_proc_list_p1[i];
+            dep_base = comm->send_dep_p2.proc_map[i];
+            dep_end = comm->send_dep_p2.proc_map[i + 1];
+            for (k = dep_base; k < dep_end; k++) {
+                int prc_idx = comm->send_dep_p2.dep_map[k];
+                comm->send_dep_p2.dep_counts[prc_idx]--;
+                if (comm->send_dep_p2.dep_counts[prc_idx] == 0) {
+                    send_data(comm, B, prc_idx);
+                }
+            }
+        } else {
+            printf("MPI_Waitany failed\n");
+        }
+    }
+    memcpy(comm->send_dep_p2.dep_counts, comm->send_dep_p2.dep_counts_copy, sizeof(int) * world_size);
+
+//    t3 = MPI_Wtime();
+//    MPI_Waitall(comm->msgRecvCount_p1, comm->recv_ls_p1, MPI_STATUSES_IGNORE);
+//    t4 = MPI_Wtime();
+//
+//    for (i = 0; i < comm->msgSendCount_p2; i++) {
+//        part = comm->send_proc_list_p2[i];
+//        range = comm->sendBuffer_p2.proc_map[part + 1] - comm->sendBuffer_p2.proc_map[part];
+//        base = comm->sendBuffer_p2.proc_map[part];
+//
+//        for (j = 0; j < range; j++) {
+//            ind = comm->sendBuffer_p2.row_map_lcl[base + j];
+//            memcpy(comm->sendBuffer_p2.buffer[base + j], B->entries[ind], sizeof(double) * B->n);
+//        }
+//        MPI_Rsend(&(comm->sendBuffer_p2.buffer[base][0]),
+//                  range * B->n,
+//                  MPI_DOUBLE,
+//                  part,
+//                  1,
+//                  MPI_COMM_WORLD);
+//        //&(Comm->send_ls_p2[i]));
+//    }
 
 
     MPI_Waitall(comm->msgRecvCount_p2, comm->recv_ls_p2, MPI_STATUSES_IGNORE);
@@ -116,13 +157,12 @@ void spmm_tp_std(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
     MPI_Barrier(MPI_COMM_WORLD);
     t2 = MPI_Wtime();
     wct_time->total_t = t2 - t1;
-    double recv_wait_t = t4 - t3;
-    double max_recv_wait_t;
-    MPI_Reduce(&recv_wait_t, &max_recv_wait_t, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-    if (world_rank == 0) {
-        printf("Max Recv Wait Time: %f\n", max_recv_wait_t);
-    }
-    
+//    double recv_wait_t = t4 - t3;
+//    double max_recv_wait_t;
+//    MPI_Reduce(&recv_wait_t, &max_recv_wait_t, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+//    if (world_rank == 0) {
+//        printf("Max Recv Wait Time: %f\n", max_recv_wait_t);
+//    }
 }
 
 void spmm_tp_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time) {
@@ -635,6 +675,7 @@ void map_csr(SparseMat *A, TP_Comm *comm) {
                 comm->reducer.reduce_local[ctr_1++] = i;
             }
         }
+        free(tmp);
     }
 
     free(global_map);
@@ -686,4 +727,78 @@ void wct_print(wct *wct_time) {
     }
     printf(",%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n", wct_time->p1_reduce_t, wct_time->p1_comm_t, wct_time->post_p1_reduce_t,
            wct_time->p2_comm_t, wct_time->SpMM_t, wct_time->total_t);
+}
+
+void map_dependencies(SparseMat *A, TP_Comm *comm) {
+    int world_size, world_rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+    // Dependency Mapping
+    memset(comm->send_dep_p2.dep_counts, 0, world_size * sizeof(int));
+    memset(comm->send_dep_p2.proc_map, 0, (world_size + 1) * sizeof(int));
+    bool *flags = (bool *) malloc(world_size * sizeof(bool));
+    for (int i = 0; i < world_size; i++) {
+        memset(flags, 0, world_size * sizeof(bool));
+        int end = comm->sendBuffer_p2.proc_map[i + 1];
+        int start = comm->sendBuffer_p2.proc_map[i];
+        for (int j = start; j < end; j++) {
+            int owner_prc = A->inPart[comm->sendBuffer_p2.row_map[j]];
+            flags[owner_prc] = true;
+        }
+        flags[world_rank] = false;
+        for (int j = 0; j < world_size; j++) {
+            if (flags[j]) {
+                comm->send_dep_p2.dep_counts[i]++;
+                comm->send_dep_p2.proc_map[j + 1]++;
+            }
+        }
+    }
+    for (int i = 0; i < world_size; i++)
+        comm->send_dep_p2.proc_map[i + 1] += comm->send_dep_p2.proc_map[i];
+
+    comm->send_dep_p2.dep_map = (int *) malloc(comm->send_dep_p2.proc_map[world_size] * sizeof(int));
+    int *map_idxs = (int *) malloc(world_size * sizeof(int));
+    memset(map_idxs, 0, world_size * sizeof(int));
+    for (int i = 0; i < world_size; i++) {
+        memset(flags, 0, world_size * sizeof(bool));
+        int end = comm->sendBuffer_p2.proc_map[i + 1];
+        int start = comm->sendBuffer_p2.proc_map[i];
+        for (int j = start; j < end; j++) {
+            int owner_prc = A->inPart[comm->sendBuffer_p2.row_map[j]];
+            flags[owner_prc] = true;
+        }
+        flags[world_rank] = false;
+        for (int j = 0; j < world_size; j++) {
+            if (flags[j]) {
+                comm->send_dep_p2.dep_map[comm->send_dep_p2.proc_map[j] + map_idxs[j]] = i;
+                map_idxs[j]++;
+            }
+        }
+    }
+    for (int i = 0; i < world_size; i++) {
+        int range = comm->send_dep_p2.proc_map[i + 1] - comm->send_dep_p2.proc_map[i];
+        if (range != map_idxs[i]) {
+            printf("Error in Dependency Mapping\n");
+            exit(0);
+        }
+    }
+    free(flags);
+    free(map_idxs);
+    int ready_to_send_count = 0;
+    int ctr = 0;
+    for (int i = 0; i < comm->msgSendCount_p2; i++) {
+        int part = comm->send_proc_list_p2[i];
+        if (comm->send_dep_p2.dep_counts[part] == 0) {
+            ready_to_send_count++;
+        }
+    }
+    comm->send_dep_p2.ready_to_send_prcs = (int *) malloc(ready_to_send_count * sizeof(int));
+    for (int i = 0; i < comm->msgSendCount_p2; i++) {
+        int part = comm->send_proc_list_p2[i];
+        if (comm->send_dep_p2.dep_counts[part] == 0) {
+            comm->send_dep_p2.ready_to_send_prcs[ctr++] = part;
+        }
+    }
+    comm->send_dep_p2.ready_to_send_count = ready_to_send_count;
+    memcpy(comm->send_dep_p2.dep_counts_copy, comm->send_dep_p2.dep_counts, world_size * sizeof(int));
 }

@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
+#include <string.h>
 
 
 void shuffle(int array[], int n) {
@@ -131,6 +132,7 @@ TP_Comm *readTwoPhaseComm(char *fName, int f, bool partial_reduce) {
 
     CommBufferInit(&(Comm->sendBuffer_p1));
     CommBufferInit(&(Comm->sendBuffer_p2));
+    init_comm_dependencies(&(Comm->send_dep_p2), world_size);
 
     if (partial_reduce != 0) {
         Comm->reducer.init = true;
@@ -289,4 +291,27 @@ void prep_comm_op(OP_Comm *Comm) {
     shuffle(send_ls, Comm->msgSendCount);
     Comm->send_proc_list = send_ls;
     Comm->recv_proc_list = recv_ls;
+}
+
+void init_comm_dependencies(Comm_Dependencies *dep, int world_size) {
+    dep->proc_map = (int *) malloc((world_size + 1) * sizeof(int));
+    dep->proc_map[0] = 0;
+    dep->dep_map = NULL;
+    dep->dep_counts = (int *) malloc(world_size * sizeof(int));
+    dep->dep_counts_copy = (int *) malloc(world_size * sizeof(int));
+    memset(dep->dep_counts, 0, world_size * sizeof(int));
+}
+
+void add_binary(int *arr, int size, int num) {
+    int st = 0, en = size - 1;
+    while (st <= en) {
+        int mid = (st + en) / 2;
+        if (arr[mid] == num) {
+            return;
+        } else if (arr[mid] < num) {
+            st = mid + 1;
+        } else {
+            en = mid - 1;
+        }
+    }
 }
