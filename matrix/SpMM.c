@@ -431,9 +431,9 @@ void spmm_op_std(SparseMat *A, Matrix *B, Matrix *C, OP_Comm *comm, wct *wct_tim
 
     memset(C->entries[0], 0, C->m * C->n * sizeof(double));
 
+    MPI_Startall(comm->msgRecvCount, comm->recv_ls);
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
-    MPI_Startall(comm->msgRecvCount, comm->recv_ls);
 
 
     for (i = 0; i < comm->msgSendCount; i++) {
@@ -479,11 +479,9 @@ void spmm_op_prf(SparseMat *A, Matrix *B, Matrix *C, OP_Comm *comm, wct *wct_tim
     int range;
     int base, part;
 
+    MPI_Startall(comm->msgRecvCount, comm->recv_ls);
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
-
-
-    MPI_Startall(comm->msgRecvCount, comm->recv_ls);
 
 
     for (i = 0; i < comm->msgSendCount; i++) {
