@@ -55,11 +55,10 @@ void spmm_tp_std(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
     int ind, ind_c;
     int range;
     int base, part;
+    MPI_Startall(comm->msgRecvCount_p1, comm->recv_ls_p1);
+    MPI_Startall(comm->msgRecvCount_p2, comm->recv_ls_p2);
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
-    MPI_Startall(comm->msgRecvCount_p1, comm->recv_ls_p1);
-
-    MPI_Startall(comm->msgRecvCount_p2, comm->recv_ls_p2);
 
     for (i = 0; i < comm->msgSendCount_p1; i++) {
         part = comm->send_proc_list_p1[i];
@@ -133,9 +132,10 @@ void spmm_tp_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
     int range;
     int base, part;
 
+    MPI_Startall(comm->msgRecvCount_p1, comm->recv_ls_p1);
+    MPI_Startall(comm->msgRecvCount_p2, comm->recv_ls_p2);
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
-    MPI_Startall(comm->msgRecvCount_p1, comm->recv_ls_p1);
 
 
     for (i = 0; i < comm->msgSendCount_p1; i++) {
@@ -165,7 +165,6 @@ void spmm_tp_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
 
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
-    MPI_Startall(comm->msgRecvCount_p2, comm->recv_ls_p2);
 
     for (i = 0; i < comm->msgSendCount_p2; i++) {
         part = comm->send_proc_list_p2[i];
@@ -214,12 +213,11 @@ void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time
     double t1, t2, t3;
     memset(C->entries[0], 0, C->m * C->n * sizeof(double));
 
+    MPI_Startall(comm->msgRecvCount_p1, comm->recv_ls_p1);
+    MPI_Startall(comm->msgRecvCount_p2, comm->recv_ls_p2);
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
 
-    MPI_Startall(comm->msgRecvCount_p1, comm->recv_ls_p1);
-
-    MPI_Startall(comm->msgRecvCount_p2, comm->recv_ls_p2);
     int idx, vtx, tmp;
     double factor;
     for (i = 0; i < comm->reducer.lcl_count; i++) {
@@ -310,9 +308,10 @@ void spmm_tp_pr_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_
     int base, part;
     double t1, t2, t3;
     memset(C->entries[0], 0, C->m * C->n * sizeof(double));
-
     int idx, vtx, tmp;
     double factor;
+    MPI_Startall(comm->msgRecvCount_p1, comm->recv_ls_p1);
+    MPI_Startall(comm->msgRecvCount_p2, comm->recv_ls_p2);
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
     for (i = 0; i < comm->reducer.lcl_count; i++) {
@@ -335,7 +334,6 @@ void spmm_tp_pr_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_
     wct_time->p1_reduce_t = t2 - t1;
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
-    MPI_Startall(comm->msgRecvCount_p1, comm->recv_ls_p1);
     for (i = 0; i < comm->msgSendCount_p1; i++) {
         part = comm->send_proc_list_p1[i];
         range = comm->sendBuffer_p1.proc_map[part + 1] - comm->sendBuffer_p1.proc_map[part];
@@ -381,7 +379,6 @@ void spmm_tp_pr_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_
 
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
-    MPI_Startall(comm->msgRecvCount_p2, comm->recv_ls_p2);
     for (i = 0; i < comm->msgSendCount_p2; i++) {
         part = comm->send_proc_list_p2[i];
         range = comm->sendBuffer_p2.proc_map[part + 1] - comm->sendBuffer_p2.proc_map[part];
