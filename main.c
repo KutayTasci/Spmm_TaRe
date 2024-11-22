@@ -54,6 +54,9 @@ void test_op(ReaderRet *args, void (*spmm)()) {
     map_csr_op(A, comm);
     prep_comm_op(comm);
     map_comm_op(comm, X);
+    if (world_rank == 0) {
+        printf("Read and mapped\n");
+    }
     float *runtimes = (float *) malloc(args->iter * sizeof(float));
     int i;
     wct times = wct_init();
@@ -61,6 +64,9 @@ void test_op(ReaderRet *args, void (*spmm)()) {
     //warmup iteration
     for (i = 0; i < 10; i++) {
         spmm(A, X, Y, comm, WCT_FULL, &times);
+    }
+    if (world_rank == 0) {
+        printf("Warmup done\n");
     }
 
 
