@@ -51,6 +51,7 @@ Matrix *matrix_create_op(int row, int col, int gm, int gn, OP_Comm *comm) {
  * Added by @Kutay
 */
 void matrix_free(Matrix *m) {
+
     if (m->m > 0) {
         free(m->entries[0]);
         free(m->entries);
