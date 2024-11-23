@@ -89,7 +89,6 @@ void test_op(ReaderRet *args, void (*spmm)()) {
         wct_print(&times);
     }
     MPI_Barrier(MPI_COMM_WORLD);
-    printf("Free rank %d\n", world_rank);
     matrix_free(X);
     sparseMatFree(A);
 }
