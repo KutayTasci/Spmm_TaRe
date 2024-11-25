@@ -50,15 +50,6 @@ void test_op(ReaderRet *args, void (*spmm)()) {
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-    long local_memory = get_memory_usage();
-
-    // Aggregate memory usage at rank 0
-    long total_memory = 0;
-    MPI_Reduce(&local_memory, &total_memory, 1, MPI_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
-    if (world_rank == 0) {
-        printf("Memory usage: %ld MB\n", total_memory / 1024);
-        fflush(stdout);
-    }
     MPI_Barrier(MPI_COMM_WORLD);
     SparseMat *A = readSparseMat(args->f_mat, STORE_BY_ROWS, args->f_inpart);
     MPI_Barrier(MPI_COMM_WORLD);
@@ -70,12 +61,6 @@ void test_op(ReaderRet *args, void (*spmm)()) {
     map_csr_op(A, comm);
     prep_comm_op(comm);
     map_comm_op(comm, X);
-    local_memory = get_memory_usage();
-    MPI_Reduce(&local_memory, &total_memory, 1, MPI_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
-    if (world_rank == 0) {
-        printf("Memory usage: %ld MB\n", total_memory / 1024);
-        fflush(stdout);
-    }
     float *runtimes = (float *) malloc(args->iter * sizeof(float));
     int i;
     wct times = wct_init();
@@ -166,10 +151,7 @@ int main(int argc, char *argv[]) {
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-    if (world_rank == 0) {
-        printf("Starting...\n");
-        fflush(stdout);
-    }
+
     ReaderRet parsedArgs = parseFileFromArgs(argc, argv);
     if (!parsedArgs.is_valid) {
         MPI_Finalize();
