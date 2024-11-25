@@ -6,6 +6,7 @@
 #include "inc/DenseMat.h"
 #include "inc/SpMM.h"
 #include "inc/Reader.h"
+#include <sys/resource.h>
 
 void matrix_print(Matrix *m) {
     printf("Rows: %d Columns: %d\n", m->m, m->n);
@@ -17,6 +18,12 @@ void matrix_print(Matrix *m) {
         }
         printf("\n");
     }
+}
+
+long get_memory_usage() {
+    struct rusage usage;
+    getrusage(RUSAGE_SELF, &usage);
+    return usage.ru_maxrss; // Memory usage in KB
 }
 
 void calculate_and_print_runtimes(float *runtimes, int iter, int world_rank) {
@@ -54,8 +61,13 @@ void test_op(ReaderRet *args, void (*spmm)()) {
     map_csr_op(A, comm);
     prep_comm_op(comm);
     map_comm_op(comm, X);
+    long local_memory = get_memory_usage();
+
+    // Aggregate memory usage at rank 0
+    long total_memory = 0;
+    MPI_Reduce(&local_memory, &total_memory, 1, MPI_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
     if (world_rank == 0) {
-        printf("Read and mapped\n");
+        printf("Memory usage: %ld MB\n", total_memory / 1024);
     }
     float *runtimes = (float *) malloc(args->iter * sizeof(float));
     int i;
@@ -64,9 +76,6 @@ void test_op(ReaderRet *args, void (*spmm)()) {
     //warmup iteration
     for (i = 0; i < 10; i++) {
         spmm(A, X, Y, comm, WCT_FULL, &times);
-    }
-    if (world_rank == 0) {
-        printf("Warmup done\n");
     }
 
 
