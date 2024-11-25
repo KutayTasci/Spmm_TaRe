@@ -445,31 +445,23 @@ void spmm_op_std(SparseMat *A, Matrix *B, Matrix *C, OP_Comm *comm, wct *wct_tim
         part = comm->send_proc_list[i];
         range = comm->sendBuffer.proc_map[part + 1] - comm->sendBuffer.proc_map[part];
         base = comm->sendBuffer.proc_map[part];
+        if (world_rank == 0) {
+            printf("part %d range %d base %d\n", part, range, base);
+            fflush(stdout);
+        }
 
         for (j = 0; j < range; j++) {
             ind = comm->sendBuffer.row_map_lcl[base + j];
             memcpy(comm->sendBuffer.buffer[base + j], B->entries[ind], sizeof(double) * B->n);
         }
-//        MPI_Rsend(&(comm->sendBuffer.buffer[base][0]),
-//                  range * B->n,
-//                  MPI_DOUBLE,
-//                  part,
-//                  0,
-//                  MPI_COMM_WORLD);
-        MPI_Irsend(&(comm->sendBuffer.buffer[base][0]),
-                   range * B->n,
-                   MPI_DOUBLE,
-                   part,
-                   0,
-                   MPI_COMM_WORLD,
-                   &(comm->send_ls[i]));
+        MPI_Rsend(&(comm->sendBuffer.buffer[base][0]),
+                  range * B->n,
+                  MPI_DOUBLE,
+                  part,
+                  0,
+                  MPI_COMM_WORLD);
     }
 
-    if (world_rank == 0) {
-        printf("waiting send\n");
-        fflush(stdout);
-    }
-    MPI_Waitall(comm->msgSendCount, comm->send_ls, MPI_STATUSES_IGNORE);
     if (world_rank == 0) {
         printf("waiting recv\n");
         fflush(stdout);
