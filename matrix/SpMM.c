@@ -446,12 +446,12 @@ void spmm_op_std(SparseMat *A, Matrix *B, Matrix *C, OP_Comm *comm, wct *wct_tim
             ind = comm->sendBuffer.row_map_lcl[base + j];
             memcpy(comm->sendBuffer.buffer[base + j], B->entries[ind], sizeof(double) * B->n);
         }
-        MPI_Rsend(&(comm->sendBuffer.buffer[base][0]),
+        MPI_Isend(&(comm->sendBuffer.buffer[base][0]),
                   range * B->n,
                   MPI_DOUBLE,
                   part,
                   0,
-                  MPI_COMM_WORLD);
+                  MPI_COMM_WORLD, &(comm->send_ls[i]));
     }
 
     MPI_Waitall(comm->msgRecvCount, comm->recv_ls, MPI_STATUSES_IGNORE);
