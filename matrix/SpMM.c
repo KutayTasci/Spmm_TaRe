@@ -432,13 +432,9 @@ void spmm_op_std(SparseMat *A, Matrix *B, Matrix *C, OP_Comm *comm, wct *wct_tim
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
     memset(C->entries[0], 0, C->m * C->n * sizeof(double));
 
-    MPI_Startall(comm->msgRecvCount, comm->recv_ls);
-    if (world_rank == 0) {
-        printf("Startall\n");
-        fflush(stdout);
-    }
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
+    MPI_Startall(comm->msgRecvCount, comm->recv_ls);
 
 
     for (i = 0; i < comm->msgSendCount; i++) {
@@ -458,10 +454,6 @@ void spmm_op_std(SparseMat *A, Matrix *B, Matrix *C, OP_Comm *comm, wct *wct_tim
                  MPI_COMM_WORLD);
     }
 
-    if (world_rank == 0) {
-        printf("waiting recv\n");
-        fflush(stdout);
-    }
     MPI_Waitall(comm->msgRecvCount, comm->recv_ls, MPI_STATUSES_IGNORE);
 
     for (i = 0; i < A->m; i++) {
@@ -471,10 +463,6 @@ void spmm_op_std(SparseMat *A, Matrix *B, Matrix *C, OP_Comm *comm, wct *wct_tim
                 C->entries[i][k] += A->val[j] * B->entries[tmp][k];
             }
         }
-    }
-    if (world_rank == 0) {
-        printf("done\n");
-        fflush(stdout);
     }
     MPI_Barrier(MPI_COMM_WORLD);
     t2 = MPI_Wtime();
