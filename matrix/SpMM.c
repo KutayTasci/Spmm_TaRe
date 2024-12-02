@@ -5,9 +5,17 @@
 #include <string.h>
 
 #ifdef BLOCKING_COMM
-#define MPI_Csend(buff, req) MPI_Rsend(&(buff), range * B->n, MPI_DOUBLE, part,0, MPI_COMM_WORLD)
+#ifdef USE_RSEND
+#define MPI_Csend(buff, req) MPI_Rsend(&(buff), range * B->n, MPI_DOUBLE, part, 0, MPI_COMM_WORLD)
 #else
-#define MPI_Csend(buff, req) MPI_Irsend(&(buff), range * B->n, MPI_DOUBLE, part,0, MPI_COMM_WORLD, req)
+#define MPI_Csend(buff, req) MPI_Send(&(buff), range * B->n, MPI_DOUBLE, part, 0, MPI_COMM_WORLD)
+#endif
+#else
+#ifdef USE_RSEND
+#define MPI_Csend(buff, req) MPI_Irsend(&(buff), range * B->n, MPI_DOUBLE, part, 0, MPI_COMM_WORLD, req)
+#else
+#define MPI_Csend(buff, req) MPI_Isend(&(buff), range * B->n, MPI_DOUBLE, part, 0, MPI_COMM_WORLD, req)
+#endif
 #endif
 
 void spmm_tp(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, int mode, wct *wct_time) {
