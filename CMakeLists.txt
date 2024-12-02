@@ -6,6 +6,10 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 find_package(MPI REQUIRED)
 
+if (BLOCKING_COMM)
+    add_definitions(-DBLOCKING_COMM)
+endif ()
+
 add_executable(Spmm_TaRe main.c
         inc/SparseMat.h
         matrix/SparseMat.c
