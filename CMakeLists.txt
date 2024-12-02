@@ -9,6 +9,9 @@ find_package(MPI REQUIRED)
 if (BLOCKING_COMM)
     add_definitions(-DBLOCKING_COMM)
 endif ()
+if (USE_RSEND)
+    add_definitions(-DUSE_RSEND)
+endif ()
 
 add_executable(Spmm_TaRe main.c
         inc/SparseMat.h

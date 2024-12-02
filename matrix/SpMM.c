@@ -6,15 +6,15 @@
 
 #ifdef BLOCKING_COMM
 #ifdef USE_RSEND
-#define MPI_Csend(buff, req) MPI_Rsend(&(buff), range * B->n, MPI_DOUBLE, part, 0, MPI_COMM_WORLD)
+#define MPI_Csend(buff, req, tag) MPI_Rsend(&(buff), range * B->n, MPI_DOUBLE, part, tag, MPI_COMM_WORLD)
 #else
-#define MPI_Csend(buff, req) MPI_Send(&(buff), range * B->n, MPI_DOUBLE, part, 0, MPI_COMM_WORLD)
+#define MPI_Csend(buff, req, tag) MPI_Send(&(buff), range * B->n, MPI_DOUBLE, part, tag, MPI_COMM_WORLD)
 #endif
 #else
 #ifdef USE_RSEND
-#define MPI_Csend(buff, req) MPI_Irsend(&(buff), range * B->n, MPI_DOUBLE, part, 0, MPI_COMM_WORLD, req)
+#define MPI_Csend(buff, req, tag) MPI_Irsend(&(buff), range * B->n, MPI_DOUBLE, part, tag, MPI_COMM_WORLD, req)
 #else
-#define MPI_Csend(buff, req) MPI_Isend(&(buff), range * B->n, MPI_DOUBLE, part, 0, MPI_COMM_WORLD, req)
+#define MPI_Csend(buff, req, tag) MPI_Isend(&(buff), range * B->n, MPI_DOUBLE, part, tag, MPI_COMM_WORLD, req)
 #endif
 #endif
 
@@ -81,7 +81,7 @@ void spmm_tp_std(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
             ind = comm->sendBuffer_p1.row_map_lcl[base + j];
             memcpy(comm->sendBuffer_p1.buffer[base + j], B->entries[ind], sizeof(double) * B->n);
         }
-        MPI_Csend(comm->sendBuffer_p1.buffer[base][0], &comm->send_ls_p1[i]);
+        MPI_Csend(comm->sendBuffer_p1.buffer[base][0], &comm->send_ls_p1[i], 0);
         //&(Comm->send_ls_p2[i]));
     }
 
@@ -100,7 +100,7 @@ void spmm_tp_std(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
             ind = comm->sendBuffer_p2.row_map_lcl[base + j];
             memcpy(comm->sendBuffer_p2.buffer[base + j], B->entries[ind], sizeof(double) * B->n);
         }
-        MPI_Csend(comm->sendBuffer_p2.buffer[base][0], &comm->send_ls_p2[i]);
+        MPI_Csend(comm->sendBuffer_p2.buffer[base][0], &comm->send_ls_p2[i], 1);
     }
 
 
@@ -148,7 +148,7 @@ void spmm_tp_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
             ind = comm->sendBuffer_p1.row_map_lcl[base + j];
             memcpy(comm->sendBuffer_p1.buffer[base + j], B->entries[ind], sizeof(double) * B->n);
         }
-        MPI_Csend(comm->sendBuffer_p1.buffer[base][0], &comm->send_ls_p1[i]);
+        MPI_Csend(comm->sendBuffer_p1.buffer[base][0], &comm->send_ls_p1[i], 0);
     }
 
 
@@ -171,7 +171,7 @@ void spmm_tp_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
             ind = comm->sendBuffer_p2.row_map_lcl[base + j];
             memcpy(comm->sendBuffer_p2.buffer[base + j], B->entries[ind], sizeof(double) * B->n);
         }
-        MPI_Csend(comm->sendBuffer_p2.buffer[base][0], &comm->send_ls_p2[i]);
+        MPI_Csend(comm->sendBuffer_p2.buffer[base][0], &comm->send_ls_p2[i], 1);
     }
 
 
@@ -233,7 +233,7 @@ void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time
             ind = comm->sendBuffer_p1.row_map_lcl[base + j];
             memcpy(comm->sendBuffer_p1.buffer[base + j], B->entries[ind], sizeof(double) * B->n);
         }
-        MPI_Csend(comm->sendBuffer_p1.buffer[base][0], &comm->send_ls_p1[i]);
+        MPI_Csend(comm->sendBuffer_p1.buffer[base][0], &comm->send_ls_p1[i], 0);
     }
     //MPI_Waitall(comm->msgSendCount_p1, comm->send_ls_p1, MPI_STATUSES_IGNORE);
     MPI_Waitall(comm->msgRecvCount_p1, comm->recv_ls_p1, MPI_STATUSES_IGNORE);
@@ -260,7 +260,7 @@ void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time
             ind = comm->sendBuffer_p2.row_map_lcl[base + j];
             memcpy(comm->sendBuffer_p2.buffer[base + j], B->entries[ind], sizeof(double) * B->n);
         }
-        MPI_Csend(comm->sendBuffer_p2.buffer[base][0], &comm->send_ls_p2[i]);
+        MPI_Csend(comm->sendBuffer_p2.buffer[base][0], &comm->send_ls_p2[i], 1);
     }
 
     MPI_Waitall(comm->msgRecvCount_p2, comm->recv_ls_p2, MPI_STATUSES_IGNORE);
@@ -320,7 +320,7 @@ void spmm_tp_pr_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_
             ind = comm->sendBuffer_p1.row_map_lcl[base + j];
             memcpy(comm->sendBuffer_p1.buffer[base + j], B->entries[ind], sizeof(double) * B->n);
         }
-        MPI_Csend(comm->sendBuffer_p1.buffer[base][0], &comm->send_ls_p1[i]);
+        MPI_Csend(comm->sendBuffer_p1.buffer[base][0], &comm->send_ls_p1[i], 0);
     }
     //MPI_Waitall(comm->msgSendCount_p1, comm->send_ls_p1, MPI_STATUSES_IGNORE);
     MPI_Waitall(comm->msgRecvCount_p1, comm->recv_ls_p1, MPI_STATUSES_IGNORE);
@@ -360,7 +360,7 @@ void spmm_tp_pr_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_
             ind = comm->sendBuffer_p2.row_map_lcl[base + j];
             memcpy(comm->sendBuffer_p2.buffer[base + j], B->entries[ind], sizeof(double) * B->n);
         }
-        MPI_Csend(comm->sendBuffer_p2.buffer[base][0], &comm->send_ls_p2[i]);
+        MPI_Csend(comm->sendBuffer_p2.buffer[base][0], &comm->send_ls_p2[i], 1);
     }
     MPI_Waitall(comm->msgRecvCount_p2, comm->recv_ls_p2, MPI_STATUSES_IGNORE);
     //MPI_Waitall(comm->msgSendCount_p2, comm->send_ls_p2, MPI_STATUSES_IGNORE);
@@ -411,7 +411,7 @@ void spmm_op_std(SparseMat *A, Matrix *B, Matrix *C, OP_Comm *comm, wct *wct_tim
             ind = comm->sendBuffer.row_map_lcl[base + j];
             memcpy(comm->sendBuffer.buffer[base + j], B->entries[ind], sizeof(double) * B->n);
         }
-        MPI_Csend(comm->sendBuffer.buffer[base][0], &comm->send_ls[i]);
+        MPI_Csend(comm->sendBuffer.buffer[base][0], &comm->send_ls[i], 0);
     }
 
     MPI_Waitall(comm->msgRecvCount, comm->recv_ls, MPI_STATUSES_IGNORE);
@@ -452,7 +452,7 @@ void spmm_op_prf(SparseMat *A, Matrix *B, Matrix *C, OP_Comm *comm, wct *wct_tim
             ind = comm->sendBuffer.row_map_lcl[base + j];
             memcpy(comm->sendBuffer.buffer[base + j], B->entries[ind], sizeof(double) * B->n);
         }
-        MPI_Csend(comm->sendBuffer.buffer[base][0], &comm->send_ls[i]);
+        MPI_Csend(comm->sendBuffer.buffer[base][0], &comm->send_ls[i], 0);
         //&(comm->send_ls[i]));
     }
 
