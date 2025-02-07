@@ -86,8 +86,8 @@ void matrix_fill_double(Matrix *m, double num) {
 
 void map_comm_tp(TP_Comm *Comm, Matrix *B) {
 
-    int i;
-    int base, range, part;
+    int i, part;
+    udx_t base, range;
     for (i = 0; i < Comm->msgRecvCount_p1; i++) {
         part = Comm->recv_proc_list_p1[i];
         range = Comm->recvBuffer_p1.proc_map[part + 1] - Comm->recvBuffer_p1.proc_map[part];
@@ -122,8 +122,8 @@ void map_comm_tp(TP_Comm *Comm, Matrix *B) {
 }
 
 void map_comm_op(OP_Comm *comm, Matrix *B) {
-    int i, range;
-    int base, part;
+    int i, part;
+    udx_t base, range;
 
     for (i = 0; i < comm->msgRecvCount; i++) {
         part = comm->recv_proc_list[i];
@@ -139,7 +139,5 @@ void map_comm_op(OP_Comm *comm, Matrix *B) {
                       &(comm->recv_ls[i]));
 
     }
-
-
 }
 

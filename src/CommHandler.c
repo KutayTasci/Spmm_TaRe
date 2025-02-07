@@ -83,22 +83,22 @@ TP_Comm *readTwoPhaseComm(char *fName, int f, bool partial_reduce) {
     fread(&(Comm->recvBuffer_p2.count), sizeof(int), 1, fpmat);
 
 
-    Comm->sendBuffer_p1.proc_map = (int *) malloc((world_size + 1) * sizeof(int));
+    Comm->sendBuffer_p1.proc_map = (udx_t *) malloc((world_size + 1) * sizeof(udx_t));
     Comm->sendBuffer_p1.row_map = (int *) malloc(Comm->sendBuffer_p1.count * sizeof(int));
 
-    Comm->recvBuffer_p1.proc_map = (int *) malloc((world_size + 1) * sizeof(int));
+    Comm->recvBuffer_p1.proc_map = (udx_t *) malloc((world_size + 1) * sizeof(udx_t));
     Comm->recvBuffer_p1.row_map = (int *) malloc(Comm->recvBuffer_p1.count * sizeof(int));
 
-    Comm->sendBuffer_p2.proc_map = (int *) malloc((world_size + 1) * sizeof(int));
+    Comm->sendBuffer_p2.proc_map = (udx_t *) malloc((world_size + 1) * sizeof(udx_t));
     Comm->sendBuffer_p2.row_map = (int *) malloc(Comm->sendBuffer_p2.count * sizeof(int));
 
-    Comm->recvBuffer_p2.proc_map = (int *) malloc((world_size + 1) * sizeof(int));
+    Comm->recvBuffer_p2.proc_map = (udx_t *) malloc((world_size + 1) * sizeof(udx_t));
     Comm->recvBuffer_p2.row_map = (int *) malloc(Comm->recvBuffer_p2.count * sizeof(int));
 
-    fread(Comm->sendBuffer_p1.proc_map, sizeof(int), world_size + 1, fpmat);
-    fread(Comm->recvBuffer_p1.proc_map, sizeof(int), world_size + 1, fpmat);
-    fread(Comm->sendBuffer_p2.proc_map, sizeof(int), world_size + 1, fpmat);
-    fread(Comm->recvBuffer_p2.proc_map, sizeof(int), world_size + 1, fpmat);
+    fread(Comm->sendBuffer_p1.proc_map, sizeof(udx_t), world_size + 1, fpmat);
+    fread(Comm->recvBuffer_p1.proc_map, sizeof(udx_t), world_size + 1, fpmat);
+    fread(Comm->sendBuffer_p2.proc_map, sizeof(udx_t), world_size + 1, fpmat);
+    fread(Comm->recvBuffer_p2.proc_map, sizeof(udx_t), world_size + 1, fpmat);
     Comm->msgRecvCount_p1 = 0;
     Comm->msgRecvCount_p2 = 0;
     Comm->msgSendCount_p1 = 0;
@@ -229,14 +229,14 @@ OP_Comm *readOnePhaseComm(char *fName, int f) {
     fread(&(Comm->sendBuffer.count), sizeof(int), 1, fpmat);
     fread(&(Comm->recvBuffer.count), sizeof(int), 1, fpmat);
 
-    Comm->sendBuffer.proc_map = (int *) malloc((world_size + 1) * sizeof(int));
+    Comm->sendBuffer.proc_map = (udx_t *) malloc((world_size + 1) * sizeof(udx_t));
     Comm->sendBuffer.row_map = (int *) malloc(Comm->sendBuffer.count * sizeof(int));
 
-    Comm->recvBuffer.proc_map = (int *) malloc((world_size + 1) * sizeof(int));
+    Comm->recvBuffer.proc_map = (udx_t *) malloc((world_size + 1) * sizeof(udx_t));
     Comm->recvBuffer.row_map = (int *) malloc(Comm->recvBuffer.count * sizeof(int));
 
-    fread(Comm->sendBuffer.proc_map, sizeof(int), world_size + 1, fpmat);
-    fread(Comm->recvBuffer.proc_map, sizeof(int), world_size + 1, fpmat);
+    fread(Comm->sendBuffer.proc_map, sizeof(udx_t), world_size + 1, fpmat);
+    fread(Comm->recvBuffer.proc_map, sizeof(udx_t), world_size + 1, fpmat);
 
     fread(Comm->sendBuffer.row_map, sizeof(int), Comm->sendBuffer.count, fpmat);
     fread(Comm->recvBuffer.row_map, sizeof(int), Comm->recvBuffer.count, fpmat);

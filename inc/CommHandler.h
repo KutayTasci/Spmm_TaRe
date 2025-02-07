@@ -8,9 +8,14 @@
 #include <mpi.h>
 #include <stdbool.h>
 
+#ifdef u64
+typedef unsigned long long udx_t;
+#else
+typedef unsigned int udx_t;
+#endif
 
 typedef struct {
-    int *proc_map; //world_size+1
+    udx_t *proc_map; //world_size+1
     int *row_map; //count
     int *row_map_lcl; //count
     double **buffer; //count * f
