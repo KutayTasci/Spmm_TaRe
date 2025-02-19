@@ -3,3 +3,5 @@
 /data/
 .idea
 /cmake-build-release
+bin
+build

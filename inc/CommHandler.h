@@ -8,9 +8,14 @@
 #include <mpi.h>
 #include <stdbool.h>
 
+#ifdef u64
+typedef unsigned long long udx_t;
+#else
+typedef unsigned int udx_t;
+#endif
 
 typedef struct {
-    int *proc_map; //world_size+1
+    udx_t *proc_map; //world_size+1
     int *row_map; //count
     int *row_map_lcl; //count
     double **buffer; //count * f
@@ -44,6 +49,7 @@ typedef struct {
     int *reduce_list;
     int *reduce_list_mapped;
     int **reduce_source_mapped; // first element is the length of the list
+    double **reduce_factors;
     int *reduce_local;
     int lcl_count;
     int *reduce_nonlocal;

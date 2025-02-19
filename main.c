@@ -6,6 +6,7 @@
 #include "inc/DenseMat.h"
 #include "inc/SpMM.h"
 #include "inc/Reader.h"
+#include <sys/resource.h>
 
 void matrix_print(Matrix *m) {
     printf("Rows: %d Columns: %d\n", m->m, m->n);
@@ -17,6 +18,12 @@ void matrix_print(Matrix *m) {
         }
         printf("\n");
     }
+}
+
+long get_memory_usage() {
+    struct rusage usage;
+    getrusage(RUSAGE_SELF, &usage);
+    return usage.ru_maxrss; // Memory usage in KB
 }
 
 void calculate_and_print_runtimes(float *runtimes, int iter, int world_rank) {
