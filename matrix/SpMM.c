@@ -380,7 +380,6 @@ void spmm_tp_pr_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_
         }
     }
     MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
     t2 = MPI_Wtime();
     wct_time->SpMM_t = t2 - t1;
 }
