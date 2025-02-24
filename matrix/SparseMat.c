@@ -41,12 +41,18 @@ SparseMat *readSparseMat(char *fName, int partScheme, char *inPartFile) {
         fread(&(A->m), sizeof(int), 1, fpmat);
         fread(&(A->nnz), sizeof(int), 1, fpmat);
 
-        A->ia = (long long *) malloc(sizeof(int) * (A->m + 1));
         A->ja = (int *) malloc(sizeof(int) * A->nnz);
         A->ja_mapped = (long long *) malloc(sizeof(int) * A->nnz);
         A->val = (double *) malloc(sizeof(double) * A->nnz);
 
-        fread(A->ia, sizeof(int), A->m + 1, fpmat);
+        A->ia = (long long *) malloc(sizeof(int) * (A->m + 1));
+        int *ia_temp = (int *) malloc(sizeof(int) * (A->m + 1));
+        fread(ia_temp, sizeof(int), A->m + 1, fpmat);
+        for (int i = 0; i < A->m + 1; ++i) {
+            A->ia[i] = ia_temp[i];
+        }
+        free(ia_temp);
+
         fread(A->ja, sizeof(int), A->nnz, fpmat);
         fread(A->val, sizeof(double), A->nnz, fpmat);
 
