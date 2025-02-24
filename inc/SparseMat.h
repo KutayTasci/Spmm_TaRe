@@ -14,12 +14,12 @@
  * Sparse matrix data structure added by @Kutay
  */
 typedef struct {
-    int *ia;    // rows of A in csr format
-    int *ja_mapped;
+    long long *ia;    // rows of A in csr format
+    long long *ja_mapped;
     int *ja;    // cols of A in csr format
     double *val; // values of A in csr format
 
-    int m;
+    long long m;
     int n;
     int nnz;
     int gm, gn;
@@ -27,13 +27,14 @@ typedef struct {
 
     int *l2gMap;
     int *inPart;
-    
+
     sparse_matrix_t BLAS_A;
-    
-    
+
+
 } SparseMat;
 
-SparseMat* readSparseMat(char* fName, int partScheme, char* inPartFile);
-void sparseMatFree(SparseMat* A);
+SparseMat *readSparseMat(char *fName, int partScheme, char *inPartFile);
+
+void sparseMatFree(SparseMat *A);
 
 #endif //SPMM_TARE_SPARSEMAT_H
