@@ -19,7 +19,7 @@ typedef struct {
     int *ja;    // cols of A in csr format
     double *val; // values of A in csr format
 
-    long long m;
+    int m;
     int n;
     int nnz;
     int gm, gn;
