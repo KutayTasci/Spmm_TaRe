@@ -5,6 +5,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 find_package(MPI REQUIRED)
+find_package(MKL REQUIRED)
 
 if (BLOCKING_COMM)
     add_definitions(-DBLOCKING_COMM)
@@ -25,4 +26,4 @@ add_executable(Spmm_TaRe main.c
         inc/Reader.h
         src/Reader.c)
 
-target_link_libraries(Spmm_TaRe PUBLIC MPI::MPI_C)
+target_link_libraries(Spmm_TaRe PUBLIC MPI::MPI_C MKL::MKL)
