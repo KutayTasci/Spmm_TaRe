@@ -3,6 +3,7 @@
 //
 #include "../inc/SpMM.h"
 #include <string.h>
+#include <cblas.h>
 
 #ifdef BLOCKING_COMM
 #ifdef USE_RSEND
@@ -111,9 +112,10 @@ void spmm_tp_std(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
     for (i = 0; i < A->m; i++) {
         for (j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
-            for (k = 0; k < C->n; k++) {
-                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
-            }
+//            for (k = 0; k < C->n; k++) {
+//           l     C->entries[i][k] += A->val[j] * B->entries[tmp][k];
+//            }
+            cblas_daxpy(C->n, A->val[j], B->entries[tmp], 1, C->entries[i], 1);
         }
     }
     MPI_Barrier(MPI_COMM_WORLD);
@@ -185,9 +187,10 @@ void spmm_tp_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
     for (i = 0; i < A->m; i++) {
         for (j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
-            for (k = 0; k < C->n; k++) {
-                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
-            }
+//            for (k = 0; k < C->n; k++) {
+//                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
+//            }
+            cblas_daxpy(C->n, A->val[j], B->entries[tmp], 1, C->entries[i], 1);
         }
     }
     MPI_Barrier(MPI_COMM_WORLD);
@@ -202,6 +205,7 @@ void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time
     int base, part;
     double t1, t2, t3;
     memset(C->entries[0], 0, C->m * C->n * sizeof(double));
+    memset(B->entries[0], 0, B->m * B->n * sizeof(double));
 
     MPI_Startall(comm->msgRecvCount_p1, comm->recv_ls_p1);
     MPI_Startall(comm->msgRecvCount_p2, comm->recv_ls_p2);
@@ -213,16 +217,13 @@ void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time
     for (i = 0; i < comm->reducer.lcl_count; i++) {
         idx = comm->reducer.reduce_local[i];
         vtx = comm->reducer.reduce_list_mapped[idx];
-        //This loop can be handles outside of spmm
-        for (k = 0; k < C->n; k++) {
-            B->entries[vtx][k] = 0;
-        }
         for (int j = 1; j <= comm->reducer.reduce_source_mapped[idx][0]; j++) {
             tmp = comm->reducer.reduce_source_mapped[idx][j];
             factor = comm->reducer.reduce_factors[idx][j - 1];
-            for (k = 0; k < C->n; k++) {
-                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k] * factor;
-            }
+//            for (k = 0; k < C->n; k++) {
+//                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k] * factor;
+//            }
+            cblas_daxpy(C->n, factor, B->entries[tmp], 1, B->entries[vtx], 1);
         }
     }
     for (i = 0; i < comm->msgSendCount_p1; i++) {
@@ -240,15 +241,13 @@ void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time
     for (i = 0; i < comm->reducer.nlcl_count; i++) {
         idx = comm->reducer.reduce_nonlocal[i];
         vtx = comm->reducer.reduce_list_mapped[idx];
-        for (k = 0; k < C->n; k++) {
-            B->entries[vtx][k] = 0;
-        }
         for (int j = 1; j <= comm->reducer.reduce_source_mapped[idx][0]; j++) {
             tmp = comm->reducer.reduce_source_mapped[idx][j];
             factor = comm->reducer.reduce_factors[idx][j - 1];
-            for (k = 0; k < C->n; k++) {
-                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k] * factor;
-            }
+//            for (k = 0; k < C->n; k++) {
+//                B->entries[vtx][k] +=  B->entries[tmp][k] * factor;
+//            }
+            cblas_daxpy(C->n, factor, B->entries[tmp], 1, B->entries[vtx], 1);
         }
     }
     for (i = 0; i < comm->msgSendCount_p2; i++) {
@@ -268,9 +267,10 @@ void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time
     for (i = 0; i < A->m; i++) {
         for (j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
-            for (k = 0; k < C->n; k++) {
-                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
-            }
+//            for (k = 0; k < C->n; k++) {
+//                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
+//            }
+            cblas_daxpy(C->n, A->val[j], B->entries[tmp], 1, C->entries[i], 1);
         }
     }
     MPI_Barrier(MPI_COMM_WORLD);
@@ -286,6 +286,7 @@ void spmm_tp_pr_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_
     int base, part;
     double t1, t2, t3;
     memset(C->entries[0], 0, C->m * C->n * sizeof(double));
+    memset(B->entries[0], 0, B->m * B->n * sizeof(double));
     int idx, vtx, tmp;
     double factor;
     MPI_Startall(comm->msgRecvCount_p1, comm->recv_ls_p1);
@@ -295,16 +296,13 @@ void spmm_tp_pr_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_
     for (i = 0; i < comm->reducer.lcl_count; i++) {
         idx = comm->reducer.reduce_local[i];
         vtx = comm->reducer.reduce_list_mapped[idx];
-        //This loop can be handles outside of spmm
-        for (k = 0; k < C->n; k++) {
-            B->entries[vtx][k] = 0;
-        }
         for (int j = 1; j <= comm->reducer.reduce_source_mapped[idx][0]; j++) {
             tmp = comm->reducer.reduce_source_mapped[idx][j];
             factor = comm->reducer.reduce_factors[idx][j - 1];
-            for (k = 0; k < C->n; k++) {
-                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k] * factor;
-            }
+//            for (k = 0; k < C->n; k++) {
+//                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k] * factor;
+//            }
+            cblas_daxpy(C->n, factor, B->entries[tmp], 1, B->entries[vtx], 1);
         }
     }
     MPI_Barrier(MPI_COMM_WORLD);
@@ -334,15 +332,13 @@ void spmm_tp_pr_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_
     for (i = 0; i < comm->reducer.nlcl_count; i++) {
         idx = comm->reducer.reduce_nonlocal[i];
         vtx = comm->reducer.reduce_list_mapped[idx];
-        for (k = 0; k < C->n; k++) {
-            B->entries[vtx][k] = 0;
-        }
         for (int j = 1; j <= comm->reducer.reduce_source_mapped[idx][0]; j++) {
             tmp = comm->reducer.reduce_source_mapped[idx][j];
             factor = comm->reducer.reduce_factors[idx][j - 1];
-            for (k = 0; k < C->n; k++) {
-                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k] * factor;
-            }
+//            for (k = 0; k < C->n; k++) {
+//                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k] * factor;
+//            }
+            cblas_daxpy(C->n, factor, B->entries[tmp], 1, B->entries[vtx], 1);
         }
     }
     MPI_Barrier(MPI_COMM_WORLD);
@@ -374,9 +370,10 @@ void spmm_tp_pr_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_
     for (i = 0; i < A->m; i++) {
         for (j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
-            for (k = 0; k < C->n; k++) {
-                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
-            }
+//            for (k = 0; k < C->n; k++) {
+//                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
+//            }
+            cblas_daxpy(C->n, A->val[j], B->entries[tmp], 1, C->entries[i], 1);
         }
     }
     MPI_Barrier(MPI_COMM_WORLD);
@@ -418,9 +415,10 @@ void spmm_op_std(SparseMat *A, Matrix *B, Matrix *C, OP_Comm *comm, wct *wct_tim
     for (i = 0; i < A->m; i++) {
         for (j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
-            for (k = 0; k < C->n; k++) {
-                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
-            }
+//            for (k = 0; k < C->n; k++) {
+//                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
+//            }
+            cblas_daxpy(C->n, A->val[j], B->entries[tmp], 1, C->entries[i], 1);
         }
     }
     MPI_Barrier(MPI_COMM_WORLD);
@@ -469,9 +467,10 @@ void spmm_op_prf(SparseMat *A, Matrix *B, Matrix *C, OP_Comm *comm, wct *wct_tim
     for (i = 0; i < A->m; i++) {
         for (j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
-            for (k = 0; k < C->n; k++) {
-                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
-            }
+//            for (k = 0; k < C->n; k++) {
+//                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
+//            }
+            cblas_daxpy(C->n, A->val[j], B->entries[tmp], 1, C->entries[i], 1);
         }
     }
     MPI_Barrier(MPI_COMM_WORLD);
