@@ -3,8 +3,14 @@
 //
 #include "../inc/SpMM.h"
 #include <string.h>
+
+#if __has_include(<mkl_cblas.h>)
+#include <mkl_cblas.h>
+#else
+
 #include <cblas.h>
 
+#endif
 #ifdef BLOCKING_COMM
 #ifdef USE_RSEND
 #define MPI_Csend(buff, req, tag) MPI_Rsend(&(buff), range * B->n, MPI_DOUBLE, part, tag, MPI_COMM_WORLD)
