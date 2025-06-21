@@ -25,45 +25,41 @@
 #endif
 #endif
 
-void spmm_tp(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, int mode, wct *wct_time) {
-
+void spmm_tp(SparseMat* A, Matrix* B, Matrix* C, TP_Comm* comm, int mode, wct* wct_time) {
     if (!comm->reducer.init) {
         switch (mode) {
-            case WCT_FULL:
-                spmm_tp_std(A, B, C, comm, wct_time);
-                break;
-            case WCT_PROFILE :
-                spmm_tp_prf(A, B, C, comm, wct_time);//WCT ARRAY OF Size 3
-                break;
-        }
-    } else {
-        switch (mode) {
-            case WCT_FULL:
-                spmm_tp_pr(A, B, C, comm, wct_time);
-                break;
-            case WCT_PROFILE:
-                spmm_tp_pr_prf(A, B, C, comm, wct_time);//WCT ARRAY OF Size 5
-                break;
-        }
-
-    }
-
-}
-
-void spmm_op(SparseMat *A, Matrix *B, Matrix *C, OP_Comm *comm, int mode, wct *wct_time) {
-    switch (mode) {
-        case WCT_FULL: //
-            spmm_op_std(A, B, C, comm, wct_time);
+        case WCT_FULL:
+            spmm_tp_std(A, B, C, comm, wct_time);
             break;
         case WCT_PROFILE:
-            spmm_op_prf(A, B, C, comm, wct_time);//WCT ARRAY OF Size 2
+            spmm_tp_prf(A, B, C, comm, wct_time); //WCT ARRAY OF Size 3
             break;
-
+        }
     }
-
+    else {
+        switch (mode) {
+        case WCT_FULL:
+            spmm_tp_pr(A, B, C, comm, wct_time);
+            break;
+        case WCT_PROFILE:
+            spmm_tp_pr_prf(A, B, C, comm, wct_time); //WCT ARRAY OF Size 5
+            break;
+        }
+    }
 }
 
-void spmm_tp_std(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time) {
+void spmm_op(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, int mode, wct* wct_time) {
+    switch (mode) {
+    case WCT_FULL: //
+        spmm_op_std(A, B, C, comm, wct_time);
+        break;
+    case WCT_PROFILE:
+        spmm_op_prf(A, B, C, comm, wct_time); //WCT ARRAY OF Size 2
+        break;
+    }
+}
+
+void spmm_tp_std(SparseMat* A, Matrix* B, Matrix* C, TP_Comm* comm, wct* wct_time) {
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -93,7 +89,6 @@ void spmm_tp_std(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
     }
 
 
-
     //MPI_Waitall(comm->msgSendCount_p1, comm->send_ls_p1, MPI_STATUSES_IGNORE);
     MPI_Waitall(comm->msgRecvCount_p1, comm->recv_ls_p1, MPI_STATUSES_IGNORE);
 
@@ -118,9 +113,9 @@ void spmm_tp_std(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
     for (i = 0; i < A->m; i++) {
         for (j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
-//            for (k = 0; k < C->n; k++) {
-//           l     C->entries[i][k] += A->val[j] * B->entries[tmp][k];
-//            }
+            //            for (k = 0; k < C->n; k++) {
+            //           l     C->entries[i][k] += A->val[j] * B->entries[tmp][k];
+            //            }
             cblas_daxpy(C->n, A->val[j], B->entries[tmp], 1, C->entries[i], 1);
         }
     }
@@ -129,7 +124,7 @@ void spmm_tp_std(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
     wct_time->total_t = t2 - t1;
 }
 
-void spmm_tp_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time) {
+void spmm_tp_prf(SparseMat* A, Matrix* B, Matrix* C, TP_Comm* comm, wct* wct_time) {
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -158,7 +153,6 @@ void spmm_tp_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
         }
         MPI_Csend(comm->sendBuffer_p1.buffer[base][0], &comm->send_ls_p1[i], 0);
     }
-
 
 
     //MPI_Waitall(comm->msgSendCount_p1, comm->send_ls_p1, MPI_STATUSES_IGNORE);
@@ -193,9 +187,9 @@ void spmm_tp_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
     for (i = 0; i < A->m; i++) {
         for (j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
-//            for (k = 0; k < C->n; k++) {
-//                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
-//            }
+            //            for (k = 0; k < C->n; k++) {
+            //                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
+            //            }
             cblas_daxpy(C->n, A->val[j], B->entries[tmp], 1, C->entries[i], 1);
         }
     }
@@ -204,7 +198,7 @@ void spmm_tp_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
     wct_time->SpMM_t = t2 - t1;
 }
 
-void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time) {
+void spmm_tp_pr(SparseMat* A, Matrix* B, Matrix* C, TP_Comm* comm, wct* wct_time) {
     int i, j, k;
     int ind, ind_c;
     int range;
@@ -226,9 +220,9 @@ void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time
         for (int j = 1; j <= comm->reducer.reduce_source_mapped[idx][0]; j++) {
             tmp = comm->reducer.reduce_source_mapped[idx][j];
             factor = comm->reducer.reduce_factors[idx][j - 1];
-//            for (k = 0; k < C->n; k++) {
-//                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k] * factor;
-//            }
+            //            for (k = 0; k < C->n; k++) {
+            //                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k] * factor;
+            //            }
             cblas_daxpy(C->n, factor, B->entries[tmp], 1, B->entries[vtx], 1);
         }
     }
@@ -250,9 +244,6 @@ void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time
         for (int j = 1; j <= comm->reducer.reduce_source_mapped[idx][0]; j++) {
             tmp = comm->reducer.reduce_source_mapped[idx][j];
             factor = comm->reducer.reduce_factors[idx][j - 1];
-//            for (k = 0; k < C->n; k++) {
-//                B->entries[vtx][k] +=  B->entries[tmp][k] * factor;
-//            }
             cblas_daxpy(C->n, factor, B->entries[tmp], 1, B->entries[vtx], 1);
         }
     }
@@ -273,9 +264,9 @@ void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time
     for (i = 0; i < A->m; i++) {
         for (j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
-//            for (k = 0; k < C->n; k++) {
-//                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
-//            }
+            //            for (k = 0; k < C->n; k++) {
+            //                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
+            //            }
             cblas_daxpy(C->n, A->val[j], B->entries[tmp], 1, C->entries[i], 1);
         }
     }
@@ -284,7 +275,7 @@ void spmm_tp_pr(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time
     wct_time->total_t = t2 - t1;
 }
 
-void spmm_tp_pr_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time) {
+void spmm_tp_pr_prf(SparseMat* A, Matrix* B, Matrix* C, TP_Comm* comm, wct* wct_time) {
     int i, j, k;
 
     int ind, ind_c;
@@ -305,9 +296,9 @@ void spmm_tp_pr_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_
         for (int j = 1; j <= comm->reducer.reduce_source_mapped[idx][0]; j++) {
             tmp = comm->reducer.reduce_source_mapped[idx][j];
             factor = comm->reducer.reduce_factors[idx][j - 1];
-//            for (k = 0; k < C->n; k++) {
-//                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k] * factor;
-//            }
+            //            for (k = 0; k < C->n; k++) {
+            //                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k] * factor;
+            //            }
             cblas_daxpy(C->n, factor, B->entries[tmp], 1, B->entries[vtx], 1);
         }
     }
@@ -341,9 +332,9 @@ void spmm_tp_pr_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_
         for (int j = 1; j <= comm->reducer.reduce_source_mapped[idx][0]; j++) {
             tmp = comm->reducer.reduce_source_mapped[idx][j];
             factor = comm->reducer.reduce_factors[idx][j - 1];
-//            for (k = 0; k < C->n; k++) {
-//                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k] * factor;
-//            }
+            //            for (k = 0; k < C->n; k++) {
+            //                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k] * factor;
+            //            }
             cblas_daxpy(C->n, factor, B->entries[tmp], 1, B->entries[vtx], 1);
         }
     }
@@ -376,9 +367,9 @@ void spmm_tp_pr_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_
     for (i = 0; i < A->m; i++) {
         for (j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
-//            for (k = 0; k < C->n; k++) {
-//                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
-//            }
+            //            for (k = 0; k < C->n; k++) {
+            //                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
+            //            }
             cblas_daxpy(C->n, A->val[j], B->entries[tmp], 1, C->entries[i], 1);
         }
     }
@@ -388,7 +379,7 @@ void spmm_tp_pr_prf(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_
 }
 
 
-void spmm_op_std(SparseMat *A, Matrix *B, Matrix *C, OP_Comm *comm, wct *wct_time) {
+void spmm_op_std(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* wct_time) {
     int i, j, k;
     double t1, t2, t3;
 
@@ -421,9 +412,9 @@ void spmm_op_std(SparseMat *A, Matrix *B, Matrix *C, OP_Comm *comm, wct *wct_tim
     for (i = 0; i < A->m; i++) {
         for (j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
-//            for (k = 0; k < C->n; k++) {
-//                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
-//            }
+            //            for (k = 0; k < C->n; k++) {
+            //                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
+            //            }
             cblas_daxpy(C->n, A->val[j], B->entries[tmp], 1, C->entries[i], 1);
         }
     }
@@ -432,7 +423,7 @@ void spmm_op_std(SparseMat *A, Matrix *B, Matrix *C, OP_Comm *comm, wct *wct_tim
     wct_time->total_t = t2 - t1;
 }
 
-void spmm_op_prf(SparseMat *A, Matrix *B, Matrix *C, OP_Comm *comm, wct *wct_time) {
+void spmm_op_prf(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* wct_time) {
     int i, j, k;
     double t1, t2, t3;
 
@@ -473,9 +464,9 @@ void spmm_op_prf(SparseMat *A, Matrix *B, Matrix *C, OP_Comm *comm, wct *wct_tim
     for (i = 0; i < A->m; i++) {
         for (j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
-//            for (k = 0; k < C->n; k++) {
-//                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
-//            }
+            //            for (k = 0; k < C->n; k++) {
+            //                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
+            //            }
             cblas_daxpy(C->n, A->val[j], B->entries[tmp], 1, C->entries[i], 1);
         }
     }
@@ -485,11 +476,11 @@ void spmm_op_prf(SparseMat *A, Matrix *B, Matrix *C, OP_Comm *comm, wct *wct_tim
 }
 
 
-void map_csr(SparseMat *A, TP_Comm *comm) {
+void map_csr(SparseMat* A, TP_Comm* comm) {
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-    int *global_map = (int *) malloc(A->gn * sizeof(int));
+    int* global_map = (int*)malloc(A->gn * sizeof(int));
 
     for (int i = 0; i < A->gn; i++) {
         global_map[i] = -1;
@@ -516,7 +507,7 @@ void map_csr(SparseMat *A, TP_Comm *comm) {
         }
     }
 
-    comm->sendBuffer_p1.row_map_lcl = (int *) malloc(comm->sendBuffer_p1.count * sizeof(int));
+    comm->sendBuffer_p1.row_map_lcl = (int*)malloc(comm->sendBuffer_p1.count * sizeof(int));
     for (int i = 0; i < comm->sendBuffer_p1.count; ++i) {
         comm->sendBuffer_p1.row_map_lcl[i] = global_map[comm->sendBuffer_p1.row_map[i]];
         if (comm->sendBuffer_p1.row_map_lcl[i] == -1) {
@@ -524,7 +515,7 @@ void map_csr(SparseMat *A, TP_Comm *comm) {
         }
     }
 
-    comm->sendBuffer_p2.row_map_lcl = (int *) malloc(comm->sendBuffer_p2.count * sizeof(int));
+    comm->sendBuffer_p2.row_map_lcl = (int*)malloc(comm->sendBuffer_p2.count * sizeof(int));
     for (int i = 0; i < comm->sendBuffer_p2.count; ++i) {
         comm->sendBuffer_p2.row_map_lcl[i] = global_map[comm->sendBuffer_p2.row_map[i]];
         if (comm->sendBuffer_p2.row_map_lcl[i] == -1) {
@@ -532,14 +523,14 @@ void map_csr(SparseMat *A, TP_Comm *comm) {
         }
     }
 
-    comm->recvBuffer_p1.row_map_lcl = (int *) malloc(comm->recvBuffer_p1.count * sizeof(int));
+    comm->recvBuffer_p1.row_map_lcl = (int*)malloc(comm->recvBuffer_p1.count * sizeof(int));
     for (int i = 0; i < comm->recvBuffer_p1.count; ++i) {
         comm->recvBuffer_p1.row_map_lcl[i] = global_map[comm->recvBuffer_p1.row_map[i]];
         if (comm->recvBuffer_p1.row_map_lcl[i] == -1) {
             printf("Incoming seg fault 4\n");
         }
     }
-    comm->recvBuffer_p2.row_map_lcl = (int *) malloc(comm->recvBuffer_p2.count * sizeof(int));
+    comm->recvBuffer_p2.row_map_lcl = (int*)malloc(comm->recvBuffer_p2.count * sizeof(int));
     for (int i = 0; i < comm->recvBuffer_p2.count; ++i) {
         comm->recvBuffer_p2.row_map_lcl[i] = global_map[comm->recvBuffer_p2.row_map[i]];
         if (comm->recvBuffer_p2.row_map_lcl[i] == -1) {
@@ -548,7 +539,7 @@ void map_csr(SparseMat *A, TP_Comm *comm) {
     }
 
     if (comm->reducer.init) {
-        int *tmp = (int *) malloc(comm->reducer.reduce_count * sizeof(int));
+        int* tmp = (int*)malloc(comm->reducer.reduce_count * sizeof(int));
         int ctr = 0;
         int flag;
         for (int i = 0; i < comm->reducer.reduce_count; i++) {
@@ -566,31 +557,32 @@ void map_csr(SparseMat *A, TP_Comm *comm) {
             if (flag == 1) {
                 ctr++;
                 tmp[i] = 1;
-            } else {
+            }
+            else {
                 tmp[i] = 0;
             }
         }
 
-        comm->reducer.reduce_local = (int *) malloc((comm->reducer.reduce_count - ctr) * sizeof(int));
-        comm->reducer.reduce_nonlocal = (int *) malloc(ctr * sizeof(int));
+        comm->reducer.reduce_local = (int*)malloc((comm->reducer.reduce_count - ctr) * sizeof(int));
+        comm->reducer.reduce_nonlocal = (int*)malloc(ctr * sizeof(int));
         comm->reducer.lcl_count = comm->reducer.reduce_count - ctr;
         comm->reducer.nlcl_count = ctr;
         int ctr_0 = 0, ctr_1 = 0;
         for (int i = 0; i < comm->reducer.reduce_count; i++) {
             if (tmp[i] == 1) {
                 comm->reducer.reduce_nonlocal[ctr_0++] = i;
-            } else {
+            }
+            else {
                 comm->reducer.reduce_local[ctr_1++] = i;
             }
         }
     }
 
     free(global_map);
-
 }
 
-void map_csr_op(SparseMat *A, OP_Comm *comm) {
-    int *global_map = (int *) malloc(A->gn * sizeof(int));
+void map_csr_op(SparseMat* A, OP_Comm* comm) {
+    int* global_map = (int*)malloc(A->gn * sizeof(int));
 
     for (int i = 0; i < A->gn; i++) {
         global_map[i] = -1;
@@ -608,18 +600,17 @@ void map_csr_op(SparseMat *A, OP_Comm *comm) {
         A->ja_mapped[i] = global_map[A->ja[i]];
     }
 
-    comm->sendBuffer.row_map_lcl = (int *) malloc(comm->sendBuffer.count * sizeof(int));
+    comm->sendBuffer.row_map_lcl = (int*)malloc(comm->sendBuffer.count * sizeof(int));
     for (int i = 0; i < comm->sendBuffer.count; ++i) {
         comm->sendBuffer.row_map_lcl[i] = global_map[comm->sendBuffer.row_map[i]];
     }
 
-    comm->recvBuffer.row_map_lcl = (int *) malloc(comm->recvBuffer.count * sizeof(int));
+    comm->recvBuffer.row_map_lcl = (int*)malloc(comm->recvBuffer.count * sizeof(int));
     for (int i = 0; i < comm->recvBuffer.count; ++i) {
         comm->recvBuffer.row_map_lcl[i] = global_map[comm->recvBuffer.row_map[i]];
     }
 
     free(global_map);
-
 }
 
 inline wct wct_init() {
@@ -627,10 +618,10 @@ inline wct wct_init() {
     return wct_time;
 }
 
-void wct_print(wct *wct_time) {
+void wct_print(wct* wct_time) {
     if (wct_time->total_t == 0) {
         wct_time->total_t = wct_time->p1_reduce_t + wct_time->p1_comm_t + wct_time->post_p1_reduce_t +
-                            wct_time->p2_comm_t + wct_time->SpMM_t;
+            wct_time->p2_comm_t + wct_time->SpMM_t;
     }
     printf(",%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n", wct_time->p1_reduce_t, wct_time->p1_comm_t, wct_time->post_p1_reduce_t,
            wct_time->p2_comm_t, wct_time->SpMM_t, wct_time->total_t);
