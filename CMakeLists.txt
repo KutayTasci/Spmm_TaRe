@@ -8,9 +8,11 @@ find_package(MPI REQUIRED)
 find_package(BLAS REQUIRED)
 
 if (BLOCKING_COMM)
+    message(STATUS "Blocking communication enabled")
     add_definitions(-DBLOCKING_COMM)
 endif ()
 if (USE_RSEND)
+    message(STATUS "Using ready send for communication")
     add_definitions(-DUSE_RSEND)
 endif ()
 
