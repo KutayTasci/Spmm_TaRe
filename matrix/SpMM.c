@@ -7,9 +7,7 @@
 #if __has_include(<mkl_cblas.h>)
 #include <mkl_cblas.h>
 #else
-
 #include <cblas.h>
-
 #endif
 #ifdef BLOCKING_COMM
 #ifdef USE_RSEND

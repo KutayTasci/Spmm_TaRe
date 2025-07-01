@@ -1,9 +1,9 @@
 # variables
 exec_path="./cmake-build-release/Spmm_TaRe"
 folder_path="/home/serdar/Code/PycharmProjects/DM-Partition/folders/" # do not forget the slash at the end
-declare -a dsets=("pattern1-7-0.3")
+declare -a dsets=("citationCiteseer-7-1-0-1")
 declare -a comm_types=("op" "tp")
-declare -a reduces=("noreduce" "reduce")
+declare -a reduces=("noreduce")
 prc_count=7
 # END of variables
 # print headers

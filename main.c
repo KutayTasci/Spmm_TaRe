@@ -110,6 +110,10 @@ void test_tp(ReaderRet* args, void (*spmm)(SparseMat*, Matrix*, Matrix*, TP_Comm
 
     prep_comm_tp(comm);
     map_comm_tp(comm, X);
+    if (world_rank == 0) {
+        printf("A->m: %d\n", A->m);
+        fflush(stdout);
+    }
 
     int i;
     wct times = wct_init();
