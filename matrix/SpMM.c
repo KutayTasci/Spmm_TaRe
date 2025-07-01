@@ -220,9 +220,6 @@ void spmm_tp_pr(SparseMat* A, Matrix* B, Matrix* C, TP_Comm* comm, wct* wct_time
         for (int j = 1; j <= comm->reducer.reduce_source_mapped[idx][0]; j++) {
             tmp = comm->reducer.reduce_source_mapped[idx][j];
             factor = comm->reducer.reduce_factors[idx][j - 1];
-            //            for (k = 0; k < C->n; k++) {
-            //                B->entries[vtx][k] = B->entries[vtx][k] + B->entries[tmp][k] * factor;
-            //            }
             cblas_daxpy(C->n, factor, B->entries[tmp], 1, B->entries[vtx], 1);
         }
     }
@@ -236,7 +233,9 @@ void spmm_tp_pr(SparseMat* A, Matrix* B, Matrix* C, TP_Comm* comm, wct* wct_time
         }
         MPI_Csend(comm->sendBuffer_p1.buffer[base][0], &comm->send_ls_p1[i], 0);
     }
-    //MPI_Waitall(comm->msgSendCount_p1, comm->send_ls_p1, MPI_STATUSES_IGNORE);
+    // #ifndef BLOCKING_COMM
+    //     MPI_Waitall(comm->msgSendCount_p1, comm->send_ls_p1, MPI_STATUSES_IGNORE);
+    // #endif
     MPI_Waitall(comm->msgRecvCount_p1, comm->recv_ls_p1, MPI_STATUSES_IGNORE);
     for (i = 0; i < comm->reducer.nlcl_count; i++) {
         idx = comm->reducer.reduce_nonlocal[i];
