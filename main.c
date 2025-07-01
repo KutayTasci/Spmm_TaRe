@@ -111,7 +111,7 @@ void test_tp(ReaderRet* args, void (*spmm)(SparseMat*, Matrix*, Matrix*, TP_Comm
     prep_comm_tp(comm);
     map_comm_tp(comm, X);
     if (world_rank == 0) {
-        printf("A->m: %d\n", A->m);
+        printf("A->m: %d, rdc_cnt: %d \n", A->m, comm->reducer.reduce_count);
         fflush(stdout);
     }
 
