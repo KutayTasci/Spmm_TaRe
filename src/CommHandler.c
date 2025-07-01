@@ -154,6 +154,7 @@ TP_Comm* readTwoPhaseComm(char* fName, int f, bool partial_reduce) {
     }
     else {
         Comm->reducer.init = false;
+        Comm->reducer.reduce_count = 0;
     }
 
     return Comm;
