@@ -109,7 +109,7 @@ void spmm_tp_std(SparseMat* A, Matrix* B, Matrix* C, TP_Comm* comm, wct* wct_tim
 
 
     for (i = 0; i < A->m; i++) {
-        for (j = A->ia[i]; j < A->ia[i + 1]; j++) {
+        for (idx_t j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
             //            for (k = 0; k < C->n; k++) {
             //           l     C->entries[i][k] += A->val[j] * B->entries[tmp][k];
@@ -183,7 +183,7 @@ void spmm_tp_prf(SparseMat* A, Matrix* B, Matrix* C, TP_Comm* comm, wct* wct_tim
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
     for (i = 0; i < A->m; i++) {
-        for (j = A->ia[i]; j < A->ia[i + 1]; j++) {
+        for (idx_t j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
             //            for (k = 0; k < C->n; k++) {
             //                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
@@ -259,7 +259,7 @@ void spmm_tp_pr(SparseMat* A, Matrix* B, Matrix* C, TP_Comm* comm, wct* wct_time
     MPI_Waitall(comm->msgRecvCount_p2, comm->recv_ls_p2, MPI_STATUSES_IGNORE);
     //MPI_Waitall(comm->msgSendCount_p2, comm->send_ls_p2, MPI_STATUSES_IGNORE);
     for (i = 0; i < B->lcl_m; i++) {
-        for (j = A->ia[i]; j < A->ia[i + 1]; j++) {
+        for (idx_t j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
             //            for (k = 0; k < C->n; k++) {
             //                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
@@ -362,7 +362,7 @@ void spmm_tp_pr_prf(SparseMat* A, Matrix* B, Matrix* C, TP_Comm* comm, wct* wct_
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
     for (i = 0; i < B->lcl_m; i++) {
-        for (j = A->ia[i]; j < A->ia[i + 1]; j++) {
+        for (idx_t j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
             //            for (k = 0; k < C->n; k++) {
             //                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
@@ -407,7 +407,7 @@ void spmm_op_std(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* wct_tim
     MPI_Waitall(comm->msgRecvCount, comm->recv_ls, MPI_STATUSES_IGNORE);
 
     for (i = 0; i < A->m; i++) {
-        for (j = A->ia[i]; j < A->ia[i + 1]; j++) {
+        for (idx_t j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
             //            for (k = 0; k < C->n; k++) {
             //                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
@@ -459,7 +459,7 @@ void spmm_op_prf(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* wct_tim
     t1 = MPI_Wtime();
 
     for (i = 0; i < A->m; i++) {
-        for (j = A->ia[i]; j < A->ia[i + 1]; j++) {
+        for (idx_t j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
             //            for (k = 0; k < C->n; k++) {
             //                C->entries[i][k] += A->val[j] * B->entries[tmp][k];

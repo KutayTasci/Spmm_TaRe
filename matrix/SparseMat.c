@@ -28,25 +28,50 @@ SparseMat* readSparseMat(char* fName, int partScheme, char* inPartFile) {
         int64_t sloc;
 
         SparseMat* A = (SparseMat*)malloc(sizeof(SparseMat));
+        A->nnz = 0;
 
         FILE* fpmat = fopen(fName, "rb");
-
+        int idx_size;
+        fread(&idx_size, sizeof(int), 1, fpmat);
         fread(&(A->gm), sizeof(int), 1, fpmat);
         fread(&(A->gn), sizeof(int), 1, fpmat);
 
-        fseek(fpmat, 2 * sizeof(int) + (world_rank * sizeof(int64_t)), SEEK_SET);
+        fseek(fpmat, 3 * sizeof(int) + (world_rank * sizeof(int64_t)), SEEK_SET);
         fread(&sloc, sizeof(int64_t), 1, fpmat);
 
         fseek(fpmat, sloc, SEEK_SET);
         fread(&(A->m), sizeof(int), 1, fpmat);
-        fread(&(A->nnz), sizeof(int), 1, fpmat);
+#ifndef  use_i64
+        if (idx_size == 8) {
+            long long nnz_temp;
+            fread(&nnz_temp, sizeof(long long), 1, fpmat);
+            A->nnz = (idx_t)nnz_temp;
+        }
+        else
+#endif
+            fread(&(A->nnz), idx_size, 1, fpmat);
 
-        A->ia = (int*)malloc(sizeof(int) * (A->m + 1));
+        A->ia = (idx_t*)malloc(sizeof(idx_t) * (A->m + 1));
         A->ja = (int*)malloc(sizeof(int) * A->nnz);
         A->ja_mapped = (int*)malloc(sizeof(int) * A->nnz);
         A->val = (double*)malloc(sizeof(double) * A->nnz);
 
-        fread(A->ia, sizeof(int), A->m + 1, fpmat);
+#ifdef use_i64
+        if (idx_size == 4) {
+#else
+        if (idx_size == 8) {
+#endif
+            long long* ia_temp = malloc(idx_size * (A->m + 1));
+            fread(ia_temp, idx_size, A->m + 1, fpmat);
+            for (int i = 0; i < A->m + 1; ++i) {
+                A->ia[i] = (idx_t)ia_temp[i];
+            }
+            free(ia_temp);
+        }
+        else {
+            fread(A->ia, idx_size, A->m + 1, fpmat); // file and memory should match
+        }
+
         fread(A->ja, sizeof(int), A->nnz, fpmat);
         fread(A->val, sizeof(double), A->nnz, fpmat);
 
