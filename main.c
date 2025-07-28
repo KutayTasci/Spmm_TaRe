@@ -1,12 +1,14 @@
 #include <stdio.h>
 #include <mpi.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/resource.h>
+
 #include "inc/SparseMat.h"
 #include "inc/CommHandler.h"
 #include "inc/DenseMat.h"
 #include "inc/SpMM.h"
 #include "inc/Reader.h"
-#include <sys/resource.h>
 
 void matrix_print(Matrix* m) {
     printf("Rows: %d Columns: %d\n", m->m, m->n);
@@ -24,6 +26,19 @@ long get_memory_usage() {
     struct rusage usage;
     getrusage(RUSAGE_SELF, &usage);
     return usage.ru_maxrss; // Memory usage in KB
+}
+
+
+MPI_Info create_tuned_info() {
+    MPI_Info info;
+    MPI_Info_create(&info);
+
+    // These hints are implementation-dependent, but often safe and useful
+    MPI_Info_set(info, "no_any_source", "true"); // no MPI_ANY_SOURCE
+    MPI_Info_set(info, "no_any_tag", "true"); // no MPI_ANY_TAG
+    MPI_Info_set(info, "mpi_assert_exact_length", "true"); // message sizes will match exactly
+
+    return info;
 }
 
 void calculate_and_print_runtimes(float* runtimes, int iter, int world_rank) {
@@ -45,6 +60,7 @@ void calculate_and_print_runtimes(float* runtimes, int iter, int world_rank) {
     }
 }
 
+
 void test_op(ReaderRet* args, void (*spmm)(SparseMat*, Matrix*, Matrix*, OP_Comm*, int, wct*)) {
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -60,13 +76,25 @@ void test_op(ReaderRet* args, void (*spmm)(SparseMat*, Matrix*, Matrix*, OP_Comm
 
     map_csr_op(A, comm);
     prep_comm_op(comm);
-    map_comm_op(comm, X);
+    if (args->op_method == P2P) {
+        map_comm_op(comm, X);
+    }
+    else if (args->op_method == ALL2ALLV) {
+        map_comm_all2allv(comm, X);
+    }
+    else if (args->op_method == NEGHB_ALL2ALLV || args->op_method == NEGHB_ALL2ALLV_REORDER) {
+        MPI_Dist_graph_create_adjacent(MPI_COMM_WORLD, comm->msgRecvCount, comm->recv_proc_list, MPI_UNWEIGHTED,
+                                       comm->msgSendCount, comm->send_proc_list, MPI_UNWEIGHTED,
+                                       MPI_INFO_NULL, args->op_method == NEGHB_ALL2ALLV_REORDER,
+                                       &comm->custom_comm);
+        map_comm_nall2allv(comm, X);
+    }
     float* runtimes = (float*)malloc(args->iter * sizeof(float));
     int i;
     wct times = wct_init();
 
     //warmup iteration
-    for (i = 0; i < 10; i++) {
+    for (i = 0; i < 3; i++) {
         spmm(A, X, Y, comm, WCT_FULL, &times);
     }
 
@@ -116,8 +144,8 @@ void test_tp(ReaderRet* args, void (*spmm)(SparseMat*, Matrix*, Matrix*, TP_Comm
 
     int i;
     wct times = wct_init();
-    //10 iteration warmup
-    for (i = 0; i < 10; i++) {
+    // 5 iteration warmup
+    for (i = 0; i < 5; i++) {
         spmm(A, X, Y, comm, WCT_FULL, &times);
     }
     float* runtimes = (float*)malloc(args->iter * sizeof(float));
@@ -144,12 +172,13 @@ void test_tp(ReaderRet* args, void (*spmm)(SparseMat*, Matrix*, Matrix*, TP_Comm
     sparseMatFree(A);
 }
 
+
 int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-
+    // sleep(5);
     ReaderRet parsedArgs = parseFileFromArgs(argc, argv);
     if (!parsedArgs.is_valid) {
         MPI_Finalize();
@@ -165,7 +194,22 @@ int main(int argc, char* argv[]) {
     }
 
     if (parsedArgs.one_phase) {
-        test_op(&parsedArgs, &spmm_op);
+        switch (parsedArgs.op_method) {
+        case P2P:
+            test_op(&parsedArgs, &spmm_op);
+            break;
+        case ALL2ALLV:
+            test_op(&parsedArgs, &spmm_alltoallv);
+            break;
+        case NEGHB_ALL2ALLV:
+        case NEGHB_ALL2ALLV_REORDER:
+            test_op(&parsedArgs, &spmm_alltoallv_neghb);
+            break;
+        default:
+            if (world_rank == 0) {
+                printf("Invalid operation method: %d\n", parsedArgs.op_method);
+            }
+        }
     }
     else {
         test_tp(&parsedArgs, &spmm_tp);

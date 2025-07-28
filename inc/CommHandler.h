@@ -12,7 +12,7 @@ typedef unsigned int udx_t;
 
 
 typedef struct {
-    udx_t* proc_map; //world_size+1
+    int* proc_map; //world_size+1
     int* row_map; //count
     int* row_map_lcl; //count
     double** buffer; //count * f
@@ -26,14 +26,26 @@ typedef struct {
 typedef struct {
     CommBuffer sendBuffer;
     int msgSendCount;
+    int msgRecvCount;
     MPI_Request* send_ls;
     int* send_proc_list;
 
     CommBuffer recvBuffer;
-    int msgRecvCount;
     MPI_Request* recv_ls;
     int* recv_proc_list;
+
+    // for neighbor alltoallv
+    MPI_Comm custom_comm;
+    int* send_displs;
+    int* recv_displs;
 } OP_Comm;
+
+typedef struct {
+    CommBuffer sendBuffer;
+    int* sendMsgSizes;
+    CommBuffer recvBuffer;
+    int* recvMsgSizes;
+} alltoallvComm;
 
 /*
  * Two phase communication data structure added by @Kutay

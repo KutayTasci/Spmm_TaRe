@@ -57,6 +57,224 @@ void spmm_op(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, int mode, wct* w
     }
 }
 
+void spmm_alltoallv(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, int mode, wct* wct_time) {
+    switch (mode) {
+    case WCT_FULL: //
+        spmm_alltoallv_std(A, B, C, comm, wct_time);
+        break;
+    case WCT_PROFILE:
+        spmm_alltoallv_prf(A, B, C, comm, wct_time); //WCT ARRAY OF Size 2
+        break;
+    }
+}
+
+void spmm_alltoallv_neghb(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, int mode, wct* wct_time) {
+    switch (mode) {
+    case WCT_FULL: //
+        spmm_alltoallv_neghb_std(A, B, C, comm, wct_time);
+        break;
+    case WCT_PROFILE:
+        spmm_alltoallv_neghb_prf(A, B, C, comm, wct_time); //WCT ARRAY OF Size 2
+        break;
+    }
+}
+
+void spmm_alltoallv_neghb_std(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* wct_time) {
+    int i, j;
+    double t1, t2;
+
+
+    int world_rank, world_size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+    memset(C->entries[0], 0, C->m * C->n * sizeof(double));
+    int* sendMsgSizes = malloc(comm->msgSendCount * sizeof(int));
+    int* recvMsgSizes = malloc(comm->msgRecvCount * sizeof(int));
+    for (i = 0; i < comm->msgRecvCount; i++) {
+        int part = comm->recv_proc_list[i];
+        recvMsgSizes[i] = (comm->recvBuffer.proc_map[part + 1] - comm->recvBuffer.proc_map[part]) * B->n;
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    t1 = MPI_Wtime();
+
+
+    for (i = 0; i < comm->msgSendCount; i++) {
+        int part = comm->send_proc_list[i];
+        int range = comm->sendBuffer.proc_map[part + 1] - comm->sendBuffer.proc_map[part];
+        int base = comm->sendBuffer.proc_map[part];
+        sendMsgSizes[i] = range * B->n;
+
+        for (j = 0; j < range; j++) {
+            int ind = comm->sendBuffer.row_map_lcl[base + j];
+            memcpy(comm->sendBuffer.buffer[base + j], B->entries[ind], sizeof(double) * B->n);
+        }
+    }
+
+
+    MPI_Neighbor_alltoallv(comm->sendBuffer.buffer[0], sendMsgSizes,
+                           comm->send_displs, MPI_DOUBLE,
+                           B->entries[0], recvMsgSizes,
+                           comm->recv_displs, MPI_DOUBLE, comm->custom_comm);
+
+    for (i = 0; i < A->m; i++) {
+        for (idx_t j = A->ia[i]; j < A->ia[i + 1]; j++) {
+            int tmp = A->ja_mapped[j];
+            cblas_daxpy(C->n, A->val[j], B->entries[tmp], 1, C->entries[i], 1);
+        }
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    t2 = MPI_Wtime();
+    wct_time->total_t = t2 - t1;
+    free(sendMsgSizes);
+    free(recvMsgSizes);
+}
+
+void spmm_alltoallv_neghb_prf(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* wct_time) {
+    int i, j;
+    double t1, t2, t3;
+
+
+    int world_rank, world_size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+    memset(C->entries[0], 0, C->m * C->n * sizeof(double));
+    int* sendMsgSizes = malloc(comm->msgSendCount * sizeof(int));
+    int* recvMsgSizes = malloc(comm->msgRecvCount * sizeof(int));
+    for (i = 0; i < comm->msgRecvCount; i++) {
+        int part = comm->recv_proc_list[i];
+        recvMsgSizes[i] = (comm->recvBuffer.proc_map[part + 1] - comm->recvBuffer.proc_map[part]) * B->n;
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    t1 = MPI_Wtime();
+    for (i = 0; i < comm->msgSendCount; i++) {
+        int part = comm->send_proc_list[i];
+        int range = comm->sendBuffer.proc_map[part + 1] - comm->sendBuffer.proc_map[part];
+        int base = comm->sendBuffer.proc_map[part];
+        sendMsgSizes[i] = range * B->n;
+
+        for (j = 0; j < range; j++) {
+            int ind = comm->sendBuffer.row_map_lcl[base + j];
+            memcpy(comm->sendBuffer.buffer[base + j], B->entries[ind], sizeof(double) * B->n);
+        }
+    }
+
+
+    MPI_Neighbor_alltoallv(comm->sendBuffer.buffer[0], sendMsgSizes,
+                           comm->send_displs, MPI_DOUBLE,
+                           B->entries[0], recvMsgSizes,
+                           comm->recv_displs, MPI_DOUBLE, comm->custom_comm);
+    t2 = MPI_Wtime();
+    wct_time->p2_comm_t = t2 - t1;
+    MPI_Barrier(MPI_COMM_WORLD);
+    t1 = MPI_Wtime();
+    for (i = 0; i < A->m; i++) {
+        for (idx_t j = A->ia[i]; j < A->ia[i + 1]; j++) {
+            int tmp = A->ja_mapped[j];
+            cblas_daxpy(C->n, A->val[j], B->entries[tmp], 1, C->entries[i], 1);
+        }
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    t2 = MPI_Wtime();
+    wct_time->SpMM_t = t2 - t1;
+    free(sendMsgSizes);
+    free(recvMsgSizes);
+}
+
+void spmm_alltoallv_std(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* wct_time) {
+    int i, j;
+    double t1, t2;
+
+
+    int world_rank, world_size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+    memset(C->entries[0], 0, C->m * C->n * sizeof(double));
+    int* sendMsgSizes = malloc(world_size * sizeof(int));
+    int* recvMsgSizes = malloc(world_size * sizeof(int));
+    for (i = 0; i < world_size; i++) {
+        sendMsgSizes[i] = (comm->sendBuffer.proc_map[i + 1] - comm->sendBuffer.proc_map[i]) * B->n;
+        recvMsgSizes[i] = (comm->recvBuffer.proc_map[i + 1] - comm->recvBuffer.proc_map[i]) * B->n;
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    t1 = MPI_Wtime();
+
+
+    for (i = 0; i < world_size; i++) {
+        int range = comm->sendBuffer.proc_map[i + 1] - comm->sendBuffer.proc_map[i];
+        int base = comm->sendBuffer.proc_map[i];
+
+        for (j = 0; j < range; j++) {
+            int ind = comm->sendBuffer.row_map_lcl[base + j];
+            memcpy(comm->sendBuffer.buffer[base + j], B->entries[ind], sizeof(double) * B->n);
+        }
+    }
+
+    MPI_Alltoallv(comm->sendBuffer.buffer[0], sendMsgSizes,
+                  comm->sendBuffer.proc_map, MPI_DOUBLE,
+                  B->entries[0], recvMsgSizes,
+                  comm->recv_displs, MPI_DOUBLE, MPI_COMM_WORLD);
+
+    for (i = 0; i < A->m; i++) {
+        for (idx_t j = A->ia[i]; j < A->ia[i + 1]; j++) {
+            int tmp = A->ja_mapped[j];
+            cblas_daxpy(C->n, A->val[j], B->entries[tmp], 1, C->entries[i], 1);
+        }
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    t2 = MPI_Wtime();
+    wct_time->total_t = t2 - t1;
+    free(sendMsgSizes);
+    free(recvMsgSizes);
+}
+
+void spmm_alltoallv_prf(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* wct_time) {
+    int i, j;
+    double t1, t2, t3;
+
+
+    int world_rank, world_size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+    memset(C->entries[0], 0, C->m * C->n * sizeof(double));
+    int* sendMsgSizes = malloc(world_size * sizeof(int));
+    int* recvMsgSizes = malloc(world_size * sizeof(int));
+    for (i = 0; i < world_size; i++) {
+        sendMsgSizes[i] = (comm->sendBuffer.proc_map[i + 1] - comm->sendBuffer.proc_map[i]) * B->n;
+        recvMsgSizes[i] = (comm->recvBuffer.proc_map[i + 1] - comm->recvBuffer.proc_map[i]) * B->n;
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    t1 = MPI_Wtime();
+    for (i = 0; i < world_rank; i++) {
+        int range = comm->sendBuffer.proc_map[i + 1] - comm->sendBuffer.proc_map[i];
+        int base = comm->sendBuffer.proc_map[i];
+
+        for (j = 0; j < range; j++) {
+            int ind = comm->sendBuffer.row_map_lcl[base + j];
+            memcpy(comm->sendBuffer.buffer[base + j], B->entries[ind], sizeof(double) * B->n);
+        }
+    }
+
+    MPI_Alltoallv(comm->sendBuffer.buffer[0], sendMsgSizes,
+                  comm->sendBuffer.proc_map, MPI_DOUBLE,
+                  B->entries[0], recvMsgSizes,
+                  comm->recv_displs, MPI_DOUBLE, MPI_COMM_WORLD);
+    t2 = MPI_Wtime();
+    wct_time->p2_comm_t = t2 - t1;
+    MPI_Barrier(MPI_COMM_WORLD);
+    t1 = MPI_Wtime();
+    for (i = 0; i < A->m; i++) {
+        for (idx_t j = A->ia[i]; j < A->ia[i + 1]; j++) {
+            int tmp = A->ja_mapped[j];
+            cblas_daxpy(C->n, A->val[j], B->entries[tmp], 1, C->entries[i], 1);
+        }
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    t2 = MPI_Wtime();
+    wct_time->SpMM_t = t2 - t1;
+    free(sendMsgSizes);
+    free(recvMsgSizes);
+}
+
 void spmm_tp_std(SparseMat* A, Matrix* B, Matrix* C, TP_Comm* comm, wct* wct_time) {
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);

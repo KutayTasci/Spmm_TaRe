@@ -136,3 +136,27 @@ void map_comm_op(OP_Comm* comm, Matrix* B) {
     }
 }
 
+void map_comm_all2allv(OP_Comm* comm, Matrix* B) {
+    int world_size;
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+    comm->recv_displs = (int*)malloc(world_size * sizeof(int));
+    for (int i = 0; i < world_size; i++) {
+        int base = comm->recvBuffer.proc_map[i] + B->phase_1;
+        comm->recv_displs[i] = base * B->n;
+    }
+}
+
+void map_comm_nall2allv(OP_Comm* comm, Matrix* B) {
+    comm->recv_displs = malloc(comm->msgRecvCount * sizeof(int));
+    comm->send_displs = malloc(comm->msgSendCount * sizeof(int));
+    for (int i = 0; i < comm->msgRecvCount; i++) {
+        const int part = comm->recv_proc_list[i];
+        const int base = comm->recvBuffer.proc_map[part] + B->phase_1;
+        comm->recv_displs[i] = base * B->n;
+    }
+    for (int i = 0; i < comm->msgSendCount; i++) {
+        const int part = comm->send_proc_list[i];
+        const int base = comm->sendBuffer.proc_map[part];
+        comm->send_displs[i] = base * B->n;
+    }
+}

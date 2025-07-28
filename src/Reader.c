@@ -4,7 +4,7 @@
 
 #include "../inc/Reader.h"
 
-ReaderRet parseFileFromArgs(int argc, char *argv[]) {
+ReaderRet parseFileFromArgs(int argc, char* argv[]) {
     ReaderRet ret;
     ret.is_valid = false;
 
@@ -14,11 +14,32 @@ ReaderRet parseFileFromArgs(int argc, char *argv[]) {
 
     if (argc != 6) {
         if (world_rank == 0) {
-            printf("Usage: %s <directory> <op|tp> <reduce|noreduce> <k> <iter>\n", argv[0]);
+            printf("Usage: %s <directory> <op|tp|a2a|na2a|na2ar> <reduce|noreduce> <k> <iter>\n", argv[0]);
         }
         return ret;
     }
-    ret.one_phase = strstr(argv[2], "op") != NULL;
+    ret.one_phase = true;
+    if (strcmp(argv[2], "op") == 0) {
+        ret.op_method = P2P; // default method
+    }
+    else if (strcmp(argv[2], "a2a") == 0) {
+        ret.op_method = ALL2ALLV;
+    }
+    else if (strcmp(argv[2], "na2a") == 0) {
+        ret.op_method = NEGHB_ALL2ALLV;
+    }
+    else if (strcmp(argv[2], "na2ar") == 0) {
+        ret.op_method = NEGHB_ALL2ALLV_REORDER;
+    }
+    else if (strcmp(argv[2], "tp") == 0) {
+        ret.one_phase = false;
+    }
+    else {
+        if (world_rank == 0) {
+            printf("Invalid operation type: %s\n", argv[2]);
+        }
+        return ret;
+    }
     ret.reduce = strstr(argv[3], "noreduce") == NULL;
     if (ret.one_phase && ret.reduce) {
         printf("One phase does not support reduce\n");
@@ -31,34 +52,40 @@ ReaderRet parseFileFromArgs(int argc, char *argv[]) {
     if (ret.reduce) {
         sprintf(inpart_str, "inpart.reduced.%d", world_size);
         sprintf(mat_str, "inpart.reduced.%d.bin", world_size);
-    } else {
+    }
+    else {
         sprintf(inpart_str, "inpart.%d", world_size);
         sprintf(mat_str, "inpart.%d.bin", world_size);
     }
     if (ret.one_phase) {
         sprintf(comm_str, "phases.%d.one.bin", world_size);
-    } else {
+    }
+    else {
         if (ret.reduce) {
             sprintf(comm_str, "phases.%d.reduced.bin", world_size);
-        } else {
+        }
+        else {
             sprintf(comm_str, "phases.%d.noreduce.bin", world_size);
         }
     }
     // open the directory
-    DIR *d;
-    struct dirent *dir;
+    DIR* d;
+    struct dirent* dir;
     d = opendir(argv[1]);
     if (d) {
         while ((dir = readdir(d)) != NULL) {
-            char *dest = NULL;
+            char* dest = NULL;
             // mat should come first since it contains inpart
             if (strstr(dir->d_name, mat_str) != NULL) {
                 dest = ret.f_mat;
-            } else if (strstr(dir->d_name, inpart_str) != NULL) {
+            }
+            else if (strstr(dir->d_name, inpart_str) != NULL) {
                 dest = ret.f_inpart;
-            } else if (strstr(dir->d_name, comm_str) != NULL) {
+            }
+            else if (strstr(dir->d_name, comm_str) != NULL) {
                 dest = ret.f_comm;
-            } else {
+            }
+            else {
                 continue;
             }
             strcpy(dest, argv[1]);
@@ -68,11 +95,12 @@ ReaderRet parseFileFromArgs(int argc, char *argv[]) {
             strcat(dest, dir->d_name);
         }
         closedir(d);
-    } else {
+    }
+    else {
         printf("Directory %s not found\n", argv[1]);
         return ret;
     }
-    char *dataset_name = strrchr(argv[1], '/');
+    char* dataset_name = strrchr(argv[1], '/');
     dataset_name++; // skip "/"
     strcpy(ret.dataset_name, dataset_name);
     // check if the files are found
