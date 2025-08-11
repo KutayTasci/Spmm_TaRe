@@ -1,10 +1,10 @@
 # variables
 exec_path="./cmake-build-release/Spmm_TaRe"
 folder_path="/home/serdar/Code/PycharmProjects/DM-Partition/folders/" # do not forget the slash at the end
-declare -a dsets=("pattern1-7-0.3")
-declare -a comm_types=("op" "tp")
-declare -a reduces=("noreduce" "reduce")
-prc_count=7
+declare -a dsets=("as-Skitter-2-1-0-1")
+declare -a comm_types=("na2a" "na2ar")
+declare -a reduces=("noreduce")
+prc_count=2
 # END of variables
 # print headers
 max_length=0
@@ -32,7 +32,7 @@ do
           if [ "$comm_type" == "op" ] && [ "$reduce" == "reduce" ]; then
             continue
           fi
-          mpirun -np $prc_count $exec_path $dset $comm_type $reduce 100 50
+          mpirun -np $prc_count $exec_path $dset $comm_type $reduce 100 10
         done
     done
 done

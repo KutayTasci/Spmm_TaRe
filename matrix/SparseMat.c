@@ -15,11 +15,12 @@
  * Added by @Kutay
 */
 
-SparseMat *readSparseMat(char *fName, int partScheme, char *inPartFile) {
+SparseMat* readSparseMat(char* fName, int partScheme, char* inPartFile) {
     if (partScheme == STORE_BY_COLUMNS) {
         printf("STORE_BY_COLUMNS not implemented.");
         exit(EXIT_FAILURE);
-    } else {
+    }
+    else {
         int world_size;
         MPI_Comm_size(MPI_COMM_WORLD, &world_size);
         // Get the rank of the process
@@ -27,31 +28,50 @@ SparseMat *readSparseMat(char *fName, int partScheme, char *inPartFile) {
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
         int64_t sloc;
 
-        SparseMat *A = (SparseMat *) malloc(sizeof(SparseMat));
+        SparseMat* A = (SparseMat*)malloc(sizeof(SparseMat));
+        A->nnz = 0;
 
-        FILE *fpmat = fopen(fName, "rb");
-
+        FILE* fpmat = fopen(fName, "rb");
+        int idx_size;
+        fread(&idx_size, sizeof(int), 1, fpmat);
         fread(&(A->gm), sizeof(int), 1, fpmat);
         fread(&(A->gn), sizeof(int), 1, fpmat);
 
-        fseek(fpmat, 2 * sizeof(int) + (world_rank * sizeof(int64_t)), SEEK_SET);
+        fseek(fpmat, 3 * sizeof(int) + (world_rank * sizeof(int64_t)), SEEK_SET);
         fread(&sloc, sizeof(int64_t), 1, fpmat);
 
         fseek(fpmat, sloc, SEEK_SET);
         fread(&(A->m), sizeof(int), 1, fpmat);
-        fread(&(A->nnz), sizeof(int), 1, fpmat);
-
-        A->ja = (int *) malloc(sizeof(int) * A->nnz);
-        A->ja_mapped = malloc(sizeof(long long) * A->nnz);
-        A->val = (double *) malloc(sizeof(double) * A->nnz);
-
-        A->ia = malloc(sizeof(long long) * (A->m + 1));
-        int *ia_temp = (int *) malloc(sizeof(int) * (A->m + 1));
-        fread(ia_temp, sizeof(int), A->m + 1, fpmat);
-        for (int i = 0; i < A->m + 1; ++i) {
-            A->ia[i] = ia_temp[i];
+#ifndef  use_i64
+        if (idx_size == 8) {
+            long long nnz_temp;
+            fread(&nnz_temp, sizeof(long long), 1, fpmat);
+            A->nnz = (idx_t)nnz_temp;
         }
-        free(ia_temp);
+        else
+#endif
+            fread(&(A->nnz), idx_size, 1, fpmat);
+
+        A->ia = (idx_t*)malloc(sizeof(idx_t) * (A->m + 1));
+        A->ja = (int*)malloc(sizeof(int) * A->nnz);
+        A->ja_mapped = (int*)malloc(sizeof(int) * A->nnz);
+        A->val = (double*)malloc(sizeof(double) * A->nnz);
+
+#ifdef use_i64
+        if (idx_size == 4) {
+#else
+        if (idx_size == 8) {
+#endif
+            long long* ia_temp = malloc(idx_size * (A->m + 1));
+            fread(ia_temp, idx_size, A->m + 1, fpmat);
+            for (int i = 0; i < A->m + 1; ++i) {
+                A->ia[i] = (idx_t)ia_temp[i];
+            }
+            free(ia_temp);
+        }
+        else {
+            fread(A->ia, idx_size, A->m + 1, fpmat); // file and memory should match
+        }
 
         fread(A->ja, sizeof(int), A->nnz, fpmat);
         fread(A->val, sizeof(double), A->nnz, fpmat);
@@ -61,7 +81,7 @@ SparseMat *readSparseMat(char *fName, int partScheme, char *inPartFile) {
         A->inPart = malloc(sizeof(*(A->inPart)) * A->gn);
         A->l2gMap = malloc(sizeof(int) * A->m);
 
-        FILE *pf = fopen(inPartFile, "rb");
+        FILE* pf = fopen(inPartFile, "rb");
         fread(A->inPart, sizeof(int), A->gn, pf);
         fclose(pf);
         int ctr = 0;
@@ -71,7 +91,7 @@ SparseMat *readSparseMat(char *fName, int partScheme, char *inPartFile) {
             }
         }
 
-        int *tmp = malloc(sizeof(*tmp) * A->gn);
+        int* tmp = malloc(sizeof(*tmp) * A->gn);
         memset(tmp, 0, sizeof(*tmp) * A->gn);
         A->n = 0;
         for (int i = 0; i < A->m; ++i) {
@@ -91,7 +111,6 @@ SparseMat *readSparseMat(char *fName, int partScheme, char *inPartFile) {
 
         free(tmp);
 
-
         fclose(fpmat);
         return A;
     }
@@ -101,13 +120,13 @@ SparseMat *readSparseMat(char *fName, int partScheme, char *inPartFile) {
  * Free SparseMat Object
  * Added by @Kutay
 */
-void sparseMatFree(SparseMat *A) {
+void sparseMatFree(SparseMat* A) {
     free(A->ia);
     free(A->ja);
     free(A->val);
     free(A->inPart);
     free(A->l2gMap);
     free(A);
-    A = NULL;
+    // A = NULL;
 }
 

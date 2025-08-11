@@ -10,18 +10,23 @@
 
 #include "mkl.h"
 
+#ifdef use_i64
+typedef long long idx_t;
+#else
+typedef int idx_t;
+#endif
 /*
  * Sparse matrix data structure added by @Kutay
  */
 typedef struct {
-    long long *ia;    // rows of A in csr format
-    long long *ja_mapped;
-    int *ja;    // cols of A in csr format
-    double *val; // values of A in csr format
+    idx_t* ia; // rows of A in csr format
+    int* ja_mapped;
+    int* ja; // cols of A in csr format
+    double* val; // values of A in csr format
 
     int m;
     int n;
-    int nnz;
+    idx_t nnz;
     int gm, gn;
     int store;
 
@@ -33,8 +38,7 @@ typedef struct {
 
 } SparseMat;
 
-SparseMat *readSparseMat(char *fName, int partScheme, char *inPartFile);
-
-void sparseMatFree(SparseMat *A);
+SparseMat* readSparseMat(char* fName, int partScheme, char* inPartFile);
+void sparseMatFree(SparseMat* A);
 
 #endif //SPMM_TARE_SPARSEMAT_H

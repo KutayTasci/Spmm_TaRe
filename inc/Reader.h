@@ -12,10 +12,18 @@
 #include <dirent.h>
 #include <stdlib.h>
 
+enum OP_METHOD {
+    P2P = 0,
+    ALL2ALLV = 1,
+    NEGHB_ALL2ALLV = 2,
+    NEGHB_ALL2ALLV_REORDER = 3,
+};
+
 typedef struct ReaderRet {
     bool is_valid;
     bool one_phase;
     bool reduce;
+    enum OP_METHOD op_method;
     int k;
     int iter;
     char f_inpart[200];
@@ -24,6 +32,6 @@ typedef struct ReaderRet {
     char dataset_name[100];
 } ReaderRet;
 
-ReaderRet parseFileFromArgs(int argc, char *argv[]);
+ReaderRet parseFileFromArgs(int argc, char* argv[]);
 
 #endif //SPMM_TARE_READER_H
