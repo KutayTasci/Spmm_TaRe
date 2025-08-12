@@ -479,9 +479,6 @@ void spmm_tp_pr(SparseMat* A, Matrix* B, Matrix* C, TP_Comm* comm, wct* wct_time
     for (i = 0; i < B->lcl_m; i++) {
         for (idx_t j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
-            //            for (k = 0; k < C->n; k++) {
-            //                C->entries[i][k] += A->val[j] * B->entries[tmp][k];
-            //            }
             cblas_daxpy(C->n, A->val[j], B->entries[tmp], 1, C->entries[i], 1);
         }
     }
