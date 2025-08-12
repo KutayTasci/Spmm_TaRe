@@ -275,8 +275,8 @@ void spmm_alltoallv_prf(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* 
 
 void spmm(SparseMat *A, double *B, double *C, MKL_INT cols_B) {
     sparse_status_t status;
-    double alpha = 1.0;
-    double beta = 0.0;
+    const double alpha = 1.0;
+    const double beta = 0.0;
 
     // Define the matrix descriptor (matrix type, symmetry, etc.)
     struct matrix_descr descr;
