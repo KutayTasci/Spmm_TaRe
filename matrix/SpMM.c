@@ -39,9 +39,7 @@ void spmm_tp(SparseMat* A, Matrix* B, Matrix* C, TP_Comm* comm, int mode, wct* w
             spmm_tp_pr_prf(A, B, C, comm, wct_time); //WCT ARRAY OF Size 5
             break;
         }
-
     }
-
 }
 
 void spmm_op(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, int mode, wct* wct_time) {
@@ -273,28 +271,28 @@ void spmm_alltoallv_prf(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* 
     free(recvMsgSizes);
 }
 
-void spmm(SparseMat *A, double *B, double *C, MKL_INT cols_B) {
+void spmm(SparseMat* A, double* B, double* C, MKL_INT cols_B) {
     sparse_status_t status;
     const double alpha = 1.0;
     const double beta = 0.0;
 
     // Define the matrix descriptor (matrix type, symmetry, etc.)
     struct matrix_descr descr;
-    descr.type = SPARSE_MATRIX_TYPE_GENERAL;  // General sparse matrix (no symmetry)
+    descr.type = SPARSE_MATRIX_TYPE_GENERAL; // General sparse matrix (no symmetry)
 
     // Perform sparse matrix-matrix multiplication: A * B = C
     status = mkl_sparse_d_mm(
-        SPARSE_OPERATION_NON_TRANSPOSE,  // No transpose on A
-        alpha,                           // Scalar multiplier for A * B
-        A->BLAS_A,                       // MKL sparse matrix handle
-        descr,                           // Matrix descriptor
-        SPARSE_LAYOUT_ROW_MAJOR,         // Row-major layout for dense matrices
-        B,                               // Dense matrix B
-        cols_B,                          // Number of columns in B
-        cols_B,                          // Leading dimension of B (same as number of cols)
-        beta,                            // Scalar multiplier for C
-        C,                               // Result matrix C
-        cols_B                           // Leading dimension of C (same as number of cols)
+        SPARSE_OPERATION_NON_TRANSPOSE, // No transpose on A
+        alpha, // Scalar multiplier for A * B
+        A->BLAS_A, // MKL sparse matrix handle
+        descr, // Matrix descriptor
+        SPARSE_LAYOUT_ROW_MAJOR, // Row-major layout for dense matrices
+        B, // Dense matrix B
+        cols_B, // Number of columns in B
+        cols_B, // Leading dimension of B (same as number of cols)
+        beta, // Scalar multiplier for C
+        C, // Result matrix C
+        cols_B // Leading dimension of C (same as number of cols)
     );
 
     if (status != SPARSE_STATUS_SUCCESS) {
@@ -304,7 +302,7 @@ void spmm(SparseMat *A, double *B, double *C, MKL_INT cols_B) {
 }
 
 
-void spmm_tp_std(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_time) {
+void spmm_tp_std(SparseMat* A, Matrix* B, Matrix* C, TP_Comm* comm, wct* wct_time) {
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -332,7 +330,6 @@ void spmm_tp_std(SparseMat *A, Matrix *B, Matrix *C, TP_Comm *comm, wct *wct_tim
         MPI_Csend(comm->sendBuffer_p1.buffer[base][0], &comm->send_ls_p1[i], 0);
         //&(Comm->send_ls_p2[i]));
     }
-
 
 
     //MPI_Waitall(comm->msgSendCount_p1, comm->send_ls_p1, MPI_STATUSES_IGNORE);
@@ -392,7 +389,6 @@ void spmm_tp_prf(SparseMat* A, Matrix* B, Matrix* C, TP_Comm* comm, wct* wct_tim
         }
         MPI_Csend(comm->sendBuffer_p1.buffer[base][0], &comm->send_ls_p1[i], 0);
     }
-
 
 
     //MPI_Waitall(comm->msgSendCount_p1, comm->send_ls_p1, MPI_STATUSES_IGNORE);
@@ -787,14 +783,14 @@ void map_csr(SparseMat* A, TP_Comm* comm) {
 
     // Fill the sparse_matrix_t object (BLAS_A)
     sparse_status_t status = mkl_sparse_d_create_csr(
-        &(A->BLAS_A),  // MKL sparse matrix handle
-        SPARSE_INDEX_BASE_ZERO,  // 0-based indexing
-        A->m,  // Number of rows
+        &(A->BLAS_A), // MKL sparse matrix handle
+        SPARSE_INDEX_BASE_ZERO, // 0-based indexing
+        A->m, // Number of rows
         A->n, // Number of columns
-        A->ia,  // Row index array (csr)
-        A->ia + 1,  // Pointer to the end of the row index array
-        A->ja_mapped,  // Column index array (csr)
-        A->val   // Values array (csr)
+        A->ia, // Row index array (csr)
+        A->ia + 1, // Pointer to the end of the row index array
+        A->ja_mapped, // Column index array (csr)
+        A->val // Values array (csr)
     );
 
     if (status != SPARSE_STATUS_SUCCESS) {
@@ -803,7 +799,6 @@ void map_csr(SparseMat* A, TP_Comm* comm) {
     }
 
     free(global_map);
-
 }
 
 void map_csr_op(SparseMat* A, OP_Comm* comm) {
@@ -837,14 +832,14 @@ void map_csr_op(SparseMat* A, OP_Comm* comm) {
 
     // Fill the sparse_matrix_t object (BLAS_A)
     sparse_status_t status = mkl_sparse_d_create_csr(
-        &(A->BLAS_A),  // MKL sparse matrix handle
-        SPARSE_INDEX_BASE_ZERO,  // 0-based indexing
-        A->m,  // Number of rows
+        &(A->BLAS_A), // MKL sparse matrix handle
+        SPARSE_INDEX_BASE_ZERO, // 0-based indexing
+        A->m, // Number of rows
         A->n, // Number of columns
-        A->ia,  // Row index array (csr)
-        A->ia + 1,  // Pointer to the end of the row index array
-        A->ja_mapped,  // Column index array (csr)
-        A->val   // Values array (csr)
+        A->ia, // Row index array (csr)
+        A->ia + 1, // Pointer to the end of the row index array
+        A->ja_mapped, // Column index array (csr)
+        A->val // Values array (csr)
     );
 
     if (status != SPARSE_STATUS_SUCCESS) {
