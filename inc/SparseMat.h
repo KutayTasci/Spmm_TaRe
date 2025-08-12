@@ -20,7 +20,7 @@ typedef int idx_t;
  */
 typedef struct {
     idx_t* ia; // rows of A in csr format
-    int* ja_mapped;
+    idx_t* ja_mapped;
     int* ja; // cols of A in csr format
     double* val; // values of A in csr format
 
