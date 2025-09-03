@@ -646,10 +646,10 @@ void spmm_op_std(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* wct_tim
 }
 
 void spmm_op_prf(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* wct_time) {
-    int i, j, k;
-    double t1, t2, t3;
+    int i, j;
+    double t1, t2;
 
-    int ind, ind_c;
+    int ind;
     int range;
     int base, part;
     int world_rank;
@@ -691,7 +691,7 @@ void spmm_op_prf(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* wct_tim
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
 
-    for (i = 0; i < A->m; i++) {
+    for (i = 0; i < A->m - comm->reducer.reduce_count; i++) {
         for (idx_t j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
             //            for (k = 0; k < C->n; k++) {
