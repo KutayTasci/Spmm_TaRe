@@ -20,6 +20,20 @@ typedef struct {
     int f;
 } CommBuffer;
 
+typedef struct {
+    bool init;
+
+    int reduce_count;
+    int* reduce_list;
+    int* reduce_list_mapped;
+    int** reduce_source_mapped; // first element is the length of the list
+    double** reduce_factors;
+    int* reduce_local;
+    int lcl_count;
+    int* reduce_nonlocal;
+    int nlcl_count;
+} Reducer;
+
 /*
  * One phase communication data structure added by @Kutay
  */
@@ -38,6 +52,7 @@ typedef struct {
     MPI_Comm custom_comm;
     int* send_displs;
     int* recv_displs;
+    Reducer reducer;
 } OP_Comm;
 
 typedef struct {
@@ -51,19 +66,6 @@ typedef struct {
  * Two phase communication data structure added by @Kutay
  */
 
-typedef struct {
-    bool init;
-
-    int reduce_count;
-    int* reduce_list;
-    int* reduce_list_mapped;
-    int** reduce_source_mapped; // first element is the length of the list
-    double** reduce_factors;
-    int* reduce_local;
-    int lcl_count;
-    int* reduce_nonlocal;
-    int nlcl_count;
-} Reducer;
 
 typedef struct {
     Reducer reducer;
@@ -95,7 +97,7 @@ void CommBufferFree(CommBuffer* buff);
 
 TP_Comm* readTwoPhaseComm(char* fName, int f, bool partial_reduce);
 
-OP_Comm* readOnePhaseComm(char* fName, int f);
+OP_Comm* readOnePhaseComm(char* fName, int f, bool partial_reduce);
 
 void prep_comm_tp(TP_Comm* Comm);
 
