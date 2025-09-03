@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <mpi.h>
 #include <string.h>
@@ -69,11 +70,10 @@ void test_op(ReaderRet* args, void (*spmm)(SparseMat*, Matrix*, Matrix*, OP_Comm
     MPI_Barrier(MPI_COMM_WORLD);
     SparseMat* A = readSparseMat(args->f_mat, STORE_BY_ROWS, args->f_inpart);
     MPI_Barrier(MPI_COMM_WORLD);
-    OP_Comm* comm = readOnePhaseComm(args->f_comm, args->k);
+    OP_Comm* comm = readOnePhaseComm(args->f_comm, args->k, args->reduce);
     Matrix* X = matrix_create_op(A->m, args->k, A->gn, args->k, comm);
     matrix_fill_double(X, 0.0);
     Matrix* Y = matrix_create_op(A->m, args->k, A->gn, args->k, comm);
-
     map_csr_op(A, comm);
     prep_comm_op(comm);
     if (args->op_method == P2P) {
@@ -178,7 +178,6 @@ int main(int argc, char* argv[]) {
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-    // sleep(5);
     ReaderRet parsedArgs = parseFileFromArgs(argc, argv);
     if (!parsedArgs.is_valid) {
         MPI_Finalize();

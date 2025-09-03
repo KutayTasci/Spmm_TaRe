@@ -2,6 +2,8 @@
 // Created by kutay on 07.01.2024.
 //
 #include "../inc/SpMM.h"
+
+#include <assert.h>
 #include <string.h>
 #include "mkl.h"
 
@@ -272,7 +274,6 @@ void spmm_alltoallv_prf(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* 
 }
 
 void spmm(SparseMat* A, double* B, double* C, MKL_INT cols_B) {
-    sparse_status_t status;
     const double alpha = 1.0;
     const double beta = 0.0;
 
@@ -281,7 +282,7 @@ void spmm(SparseMat* A, double* B, double* C, MKL_INT cols_B) {
     descr.type = SPARSE_MATRIX_TYPE_GENERAL; // General sparse matrix (no symmetry)
 
     // Perform sparse matrix-matrix multiplication: A * B = C
-    status = mkl_sparse_d_mm(
+    const sparse_status_t status = mkl_sparse_d_mm(
         SPARSE_OPERATION_NON_TRANSPOSE, // No transpose on A
         alpha, // Scalar multiplier for A * B
         A->BLAS_A, // MKL sparse matrix handle
@@ -610,6 +611,15 @@ void spmm_op_std(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* wct_tim
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
     MPI_Startall(comm->msgRecvCount, comm->recv_ls);
+    if (comm->reducer.init) {
+        for (i = 0; i < comm->reducer.reduce_count; i++) {
+            for (j = 1; j <= comm->reducer.reduce_source_mapped[i][0]; j++) {
+                int src = comm->reducer.reduce_source_mapped[i][j];
+                double factor = comm->reducer.reduce_factors[i][j - 1];
+                cblas_daxpy(B->n, factor, B->entries[src], 1, B->entries[comm->reducer.reduce_list_mapped[i]], 1);
+            }
+        }
+    }
 
 
     for (i = 0; i < comm->msgSendCount; i++) {
@@ -634,10 +644,10 @@ void spmm_op_std(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* wct_tim
 }
 
 void spmm_op_prf(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* wct_time) {
-    int i, j, k;
-    double t1, t2, t3;
+    int i, j;
+    double t1, t2;
 
-    int ind, ind_c;
+    int ind;
     int range;
     int base, part;
     int world_rank;
@@ -646,6 +656,15 @@ void spmm_op_prf(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* wct_tim
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
 
+    if (comm->reducer.init) {
+        for (i = 0; i < comm->reducer.reduce_count; i++) {
+            for (j = 1; j <= comm->reducer.reduce_source_mapped[i][0]; j++) {
+                int src = comm->reducer.reduce_source_mapped[i][j];
+                double factor = comm->reducer.reduce_factors[i][j - 1];
+                cblas_daxpy(B->n, factor, B->entries[src], 1, B->entries[comm->reducer.reduce_list_mapped[i]], 1);
+            }
+        }
+    }
 
     for (i = 0; i < comm->msgSendCount; i++) {
         part = comm->send_proc_list[i];
@@ -785,7 +804,7 @@ void map_csr(SparseMat* A, TP_Comm* comm) {
     sparse_status_t status = mkl_sparse_d_create_csr(
         &(A->BLAS_A), // MKL sparse matrix handle
         SPARSE_INDEX_BASE_ZERO, // 0-based indexing
-        A->m, // Number of rows
+        A->m - comm->reducer.reduce_count, // Number of rows
         A->n, // Number of columns
         A->ia, // Row index array (csr)
         A->ia + 1, // Pointer to the end of the row index array
@@ -829,12 +848,21 @@ void map_csr_op(SparseMat* A, OP_Comm* comm) {
     for (int i = 0; i < comm->recvBuffer.count; ++i) {
         comm->recvBuffer.row_map_lcl[i] = global_map[comm->recvBuffer.row_map[i]];
     }
+    if (comm->reducer.init) {
+        for (int i = 0; i < comm->reducer.reduce_count; i++) {
+            comm->reducer.reduce_list_mapped[i] = global_map[comm->reducer.reduce_list[i]];
+            assert(comm->reducer.reduce_list_mapped[i] != -1);
+            for (int j = 1; j <= comm->reducer.reduce_source_mapped[i][0]; j++) {
+                comm->reducer.reduce_source_mapped[i][j] = global_map[comm->reducer.reduce_source_mapped[i][j]];
+            }
+        }
+    }
 
     // Fill the sparse_matrix_t object (BLAS_A)
     sparse_status_t status = mkl_sparse_d_create_csr(
         &(A->BLAS_A), // MKL sparse matrix handle
         SPARSE_INDEX_BASE_ZERO, // 0-based indexing
-        A->m, // Number of rows
+        A->m - comm->reducer.reduce_count, // Number of rows
         A->n, // Number of columns
         A->ia, // Row index array (csr)
         A->ia + 1, // Pointer to the end of the row index array

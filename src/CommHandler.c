@@ -217,7 +217,7 @@ void prep_comm_tp(TP_Comm* Comm) {
  * parallel read of one phase communication data structure
  * Added by @Kutay
  */
-OP_Comm* readOnePhaseComm(char* fName, int f) {
+OP_Comm* readOnePhaseComm(char* fName, int f, bool partial_reduce) {
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -262,7 +262,31 @@ OP_Comm* readOnePhaseComm(char* fName, int f) {
 
     CommBufferInit(&(Comm->sendBuffer));
 
+    if (partial_reduce) {
+        Comm->reducer.init = true;
+        fread(&(Comm->reducer.reduce_count), sizeof(int), 1, fpmat);
+        int nnz; // won't be used
+        fread(&nnz, sizeof(int), 1, fpmat);
+        Comm->reducer.reduce_list = (int*)malloc(Comm->reducer.reduce_count * sizeof(int));
+        Comm->reducer.reduce_list_mapped = (int*)malloc(Comm->reducer.reduce_count * sizeof(int));
+        Comm->reducer.reduce_source_mapped = (int**)malloc(Comm->reducer.reduce_count * sizeof(int*));
+        Comm->reducer.reduce_factors = (double**)malloc(Comm->reducer.reduce_count * sizeof(double*));
 
+        for (int i = 0; i < Comm->reducer.reduce_count; i++) {
+            fread(&(Comm->reducer.reduce_list[i]), sizeof(unsigned int), 1, fpmat); // global row index
+            int rdc_len;
+            fread(&(rdc_len), sizeof(int), 1, fpmat);
+            Comm->reducer.reduce_source_mapped[i] = (int*)malloc((rdc_len + 1) * sizeof(int));
+            Comm->reducer.reduce_factors[i] = (double*)malloc(rdc_len * sizeof(double));
+            Comm->reducer.reduce_source_mapped[i][0] = rdc_len;
+            fread(&(Comm->reducer.reduce_source_mapped[i][1]), sizeof(int), rdc_len, fpmat);
+            fread(Comm->reducer.reduce_factors[i], sizeof(double), rdc_len, fpmat);
+        }
+    }
+    else {
+        Comm->reducer.init = false;
+        Comm->reducer.reduce_count = 0;
+    }
     return Comm;
 }
 

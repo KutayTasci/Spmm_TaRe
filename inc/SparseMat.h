@@ -30,12 +30,10 @@ typedef struct {
     int gm, gn;
     int store;
 
-    int *l2gMap;
-    int *inPart;
+    int* l2gMap;
+    int* inPart;
 
     sparse_matrix_t BLAS_A;
-
-
 } SparseMat;
 
 SparseMat* readSparseMat(char* fName, int partScheme, char* inPartFile);

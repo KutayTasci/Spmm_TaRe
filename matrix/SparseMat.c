@@ -50,7 +50,7 @@ SparseMat* readSparseMat(char* fName, int partScheme, char* inPartFile) {
         }
         else
 #endif
-            fread(&(A->nnz), idx_size, 1, fpmat);
+        fread(&(A->nnz), idx_size, 1, fpmat);
 
         A->ia = (idx_t*)malloc(sizeof(idx_t) * (A->m + 1));
         A->ja = (int*)malloc(sizeof(int) * A->nnz);
@@ -59,10 +59,11 @@ SparseMat* readSparseMat(char* fName, int partScheme, char* inPartFile) {
 
 #ifdef use_i64
         if (idx_size == 4) {
+            int* ia_temp = malloc(idx_size * (A->m + 1));
 #else
         if (idx_size == 8) {
-#endif
             long long* ia_temp = malloc(idx_size * (A->m + 1));
+#endif
             fread(ia_temp, idx_size, A->m + 1, fpmat);
             for (int i = 0; i < A->m + 1; ++i) {
                 A->ia[i] = (idx_t)ia_temp[i];
