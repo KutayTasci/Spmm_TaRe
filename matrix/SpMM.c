@@ -2,6 +2,8 @@
 // Created by kutay on 07.01.2024.
 //
 #include "../inc/SpMM.h"
+
+#include <assert.h>
 #include <string.h>
 
 #if __has_include(<mkl_cblas.h>)
@@ -605,7 +607,15 @@ void spmm_op_std(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* wct_tim
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
     MPI_Startall(comm->msgRecvCount, comm->recv_ls);
-
+    if (comm->reducer.init) {
+        for (i = 0; i < comm->reducer.reduce_count; i++) {
+            for (j = 1; j <= comm->reducer.reduce_source_mapped[i][0]; j++) {
+                int src = comm->reducer.reduce_source_mapped[i][j];
+                double factor = comm->reducer.reduce_factors[i][j - 1];
+                cblas_daxpy(B->n, factor, B->entries[src], 1, B->entries[comm->reducer.reduce_list_mapped[i]], 1);
+            }
+        }
+    }
 
     for (i = 0; i < comm->msgSendCount; i++) {
         part = comm->send_proc_list[i];
@@ -621,7 +631,7 @@ void spmm_op_std(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* wct_tim
 
     MPI_Waitall(comm->msgRecvCount, comm->recv_ls, MPI_STATUSES_IGNORE);
 
-    for (i = 0; i < A->m; i++) {
+    for (i = 0; i < A->m - comm->reducer.reduce_count; i++) {
         for (idx_t j = A->ia[i]; j < A->ia[i + 1]; j++) {
             int tmp = A->ja_mapped[j];
             //            for (k = 0; k < C->n; k++) {
@@ -647,7 +657,15 @@ void spmm_op_prf(SparseMat* A, Matrix* B, Matrix* C, OP_Comm* comm, wct* wct_tim
     MPI_Startall(comm->msgRecvCount, comm->recv_ls);
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
-
+    if (comm->reducer.init) {
+        for (i = 0; i < comm->reducer.reduce_count; i++) {
+            for (j = 1; j <= comm->reducer.reduce_source_mapped[i][0]; j++) {
+                int src = comm->reducer.reduce_source_mapped[i][j];
+                double factor = comm->reducer.reduce_factors[i][j - 1];
+                cblas_daxpy(B->n, factor, B->entries[src], 1, B->entries[comm->reducer.reduce_list_mapped[i]], 1);
+            }
+        }
+    }
 
     for (i = 0; i < comm->msgSendCount; i++) {
         part = comm->send_proc_list[i];
@@ -820,6 +838,15 @@ void map_csr_op(SparseMat* A, OP_Comm* comm) {
     comm->recvBuffer.row_map_lcl = (int*)malloc(comm->recvBuffer.count * sizeof(int));
     for (int i = 0; i < comm->recvBuffer.count; ++i) {
         comm->recvBuffer.row_map_lcl[i] = global_map[comm->recvBuffer.row_map[i]];
+    }
+    if (comm->reducer.init) {
+        for (int i = 0; i < comm->reducer.reduce_count; i++) {
+            comm->reducer.reduce_list_mapped[i] = global_map[comm->reducer.reduce_list[i]];
+            assert(comm->reducer.reduce_list_mapped[i] != -1);
+            for (int j = 1; j <= comm->reducer.reduce_source_mapped[i][0]; j++) {
+                comm->reducer.reduce_source_mapped[i][j] = global_map[comm->reducer.reduce_source_mapped[i][j]];
+            }
+        }
     }
 
     free(global_map);

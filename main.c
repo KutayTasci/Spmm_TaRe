@@ -69,7 +69,7 @@ void test_op(ReaderRet* args, void (*spmm)(SparseMat*, Matrix*, Matrix*, OP_Comm
     MPI_Barrier(MPI_COMM_WORLD);
     SparseMat* A = readSparseMat(args->f_mat, STORE_BY_ROWS, args->f_inpart);
     MPI_Barrier(MPI_COMM_WORLD);
-    OP_Comm* comm = readOnePhaseComm(args->f_comm, args->k);
+    OP_Comm* comm = readOnePhaseComm(args->f_comm, args->k, args->reduce);
     Matrix* X = matrix_create_op(A->m, args->k, A->gn, args->k, comm);
     matrix_fill_double(X, 0.0);
     Matrix* Y = matrix_create_op(A->m, args->k, A->gn, args->k, comm);
