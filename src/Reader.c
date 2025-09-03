@@ -41,10 +41,10 @@ ReaderRet parseFileFromArgs(int argc, char* argv[]) {
         return ret;
     }
     ret.reduce = strstr(argv[3], "noreduce") == NULL;
-    if (ret.one_phase && ret.reduce) {
-        printf("One phase does not support reduce\n");
-        return ret;
-    }
+    // if (ret.one_phase && ret.reduce) {
+    //     printf("One phase does not support reduce\n");
+    //     return ret;
+    // }
     // strings to compare
     char inpart_str[100];
     char mat_str[100];
@@ -57,7 +57,7 @@ ReaderRet parseFileFromArgs(int argc, char* argv[]) {
         sprintf(inpart_str, "inpart.%d", world_size);
         sprintf(mat_str, "inpart.%d.bin", world_size);
     }
-    if (ret.one_phase) {
+    if (ret.one_phase && !ret.reduce) {
         sprintf(comm_str, "phases.%d.one.bin", world_size);
     }
     else {
