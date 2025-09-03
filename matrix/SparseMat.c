@@ -49,7 +49,7 @@ SparseMat* readSparseMat(char* fName, int partScheme, char* inPartFile) {
         }
         else
 #endif
-            fread(&(A->nnz), idx_size, 1, fpmat);
+        fread(&(A->nnz), idx_size, 1, fpmat);
 
         A->ia = (idx_t*)malloc(sizeof(idx_t) * (A->m + 1));
         A->ja = (int*)malloc(sizeof(int) * A->nnz);
