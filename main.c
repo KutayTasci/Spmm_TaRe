@@ -188,6 +188,15 @@ int main(int argc, char* argv[]) {
     if (world_rank == 0) {
         char* dataset_name = strrchr(argv[1], '/');
         dataset_name++; // skip "/"
+        // replace last 2 - with ;
+        int repl_cnt = 0;
+        for (int i = strlen(dataset_name) - 2; i >= 0; i--) {
+            if (dataset_name[i] == '-') {
+                dataset_name[i] = ',';
+                repl_cnt++;
+                if (repl_cnt == 2) break;
+            }
+        }
         // the csv headers are: dataset_name,comm_type,spmm_type,min_runtime,max_runtime,avg_runtime
         // runtime fields will be filled in the test functions
         printf("%s,%s,%s,", dataset_name, argv[2], argv[3]);
